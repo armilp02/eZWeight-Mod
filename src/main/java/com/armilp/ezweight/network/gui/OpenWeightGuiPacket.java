@@ -1,7 +1,5 @@
-package com.armilp.ezweight.network;
+package com.armilp.ezweight.network.gui;
 
-import com.armilp.ezweight.client.gui.WeightNamespaceScreen;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 

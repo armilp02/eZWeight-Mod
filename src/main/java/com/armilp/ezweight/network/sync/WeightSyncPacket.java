@@ -1,4 +1,4 @@
-package com.armilp.ezweight.network;
+package com.armilp.ezweight.network.sync;
 
 import com.armilp.ezweight.data.WeightSyncData;
 import net.minecraft.client.Minecraft;

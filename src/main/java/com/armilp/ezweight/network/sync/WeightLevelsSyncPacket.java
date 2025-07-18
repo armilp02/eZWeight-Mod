@@ -1,4 +1,4 @@
-package com.armilp.ezweight.network;
+package com.armilp.ezweight.network.sync;
 
 import com.armilp.ezweight.levels.WeightLevel;
 import com.armilp.ezweight.levels.WeightLevelManager;

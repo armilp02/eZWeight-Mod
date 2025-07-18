@@ -1,6 +1,11 @@
 package com.armilp.ezweight.network;
 
 import com.armilp.ezweight.EZWeight;
+import com.armilp.ezweight.network.gui.OpenWeightGuiPacket;
+import com.armilp.ezweight.network.sync.SyncItemsWeightPacket;
+import com.armilp.ezweight.network.sync.WeightLevelsSyncPacket;
+import com.armilp.ezweight.network.sync.WeightSyncPacket;
+import com.armilp.ezweight.network.sync.WeightUpdatePacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkDirection;
@@ -55,10 +60,10 @@ public class EZWeightNetwork {
         );
 
         CHANNEL.registerMessage(id++,
-                SyncALLWeightPacket.class,
-                SyncALLWeightPacket::encode,
-                SyncALLWeightPacket::decode,
-                SyncALLWeightPacket::handle
+                SyncItemsWeightPacket.class,
+                SyncItemsWeightPacket::encode,
+                SyncItemsWeightPacket::decode,
+                SyncItemsWeightPacket::handle
         );
     }
 

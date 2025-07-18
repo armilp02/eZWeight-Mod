@@ -1,6 +1,7 @@
-package com.armilp.ezweight.network;
+package com.armilp.ezweight.network.sync;
 
 import com.armilp.ezweight.data.ItemWeightRegistry;
+import com.armilp.ezweight.network.EZWeightNetwork;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -37,7 +38,7 @@ public class WeightUpdatePacket {
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    EZWeightNetwork.CHANNEL.sendTo(new SyncALLWeightPacket(packet.itemId, packet.weight), player.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
+                    EZWeightNetwork.CHANNEL.sendTo(new SyncItemsWeightPacket(packet.itemId, packet.weight), player.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
                 }
             }
         });

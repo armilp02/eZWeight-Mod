@@ -2,7 +2,7 @@ package com.armilp.ezweight.client.gui;
 
 import com.armilp.ezweight.data.ItemWeightRegistry;
 import com.armilp.ezweight.network.EZWeightNetwork;
-import com.armilp.ezweight.network.WeightUpdatePacket;
+import com.armilp.ezweight.network.sync.WeightUpdatePacket;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
