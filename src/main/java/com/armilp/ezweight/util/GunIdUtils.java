@@ -2,6 +2,7 @@ package com.armilp.ezweight.util;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.data.ItemWeightRegistry;
+import com.armilp.ezweight.config.WeightConfig;
 import com.tacz.guns.api.item.gun.AbstractGunItem;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -46,38 +47,43 @@ public class GunIdUtils {
     public static Optional<ResourceLocation> getGunId(ItemStack stack) {
         if (!hasGunId(stack)) return Optional.empty();
 
-        try {
-            String gunIdString = stack.getTag().getString("GunId");
-            return Optional.of(new ResourceLocation(gunIdString));
-        } catch (Exception e) {
-            EZWeight.LOGGER.warn("Invalid GunId format in item: {}",
-                    stack.getTag().getString("GunId"));
+        CompoundTag tag = stack.getTag();
+        if (tag == null) return Optional.empty();
+        String gunIdString = tag.getString("GunId");
+        ResourceLocation parsed = ResourceLocation.tryParse(gunIdString);
+        if (parsed == null) {
+            EZWeight.LOGGER.warn("Invalid GunId format in item: {}", gunIdString);
             return Optional.empty();
         }
+        return Optional.of(parsed);
     }
 
     public static Optional<ResourceLocation> getAttachmentId(ItemStack stack) {
         if (!hasAttachmentId(stack)) return Optional.empty();
 
-        try {
-            String id = stack.getTag().getString("AttachmentId");
-            return Optional.of(new ResourceLocation(id));
-        } catch (Exception e) {
-            EZWeight.LOGGER.warn("Invalid AttachmentId format in item: {}", stack.getTag().getString("AttachmentId"));
+        CompoundTag tag = stack.getTag();
+        if (tag == null) return Optional.empty();
+        String id = tag.getString("AttachmentId");
+        ResourceLocation parsed = ResourceLocation.tryParse(id);
+        if (parsed == null) {
+            EZWeight.LOGGER.warn("Invalid AttachmentId format in item: {}", id);
             return Optional.empty();
         }
+        return Optional.of(parsed);
     }
 
     public static Optional<ResourceLocation> getAmmoId(ItemStack stack) {
         if (!hasAmmoId(stack)) return Optional.empty();
 
-        try {
-            String id = stack.getTag().getString("AmmoId");
-            return Optional.of(new ResourceLocation(id));
-        } catch (Exception e) {
-            EZWeight.LOGGER.warn("Invalid AmmoId format in item: {}", stack.getTag().getString("AmmoId"));
+        CompoundTag tag = stack.getTag();
+        if (tag == null) return Optional.empty();
+        String id = tag.getString("AmmoId");
+        ResourceLocation parsed = ResourceLocation.tryParse(id);
+        if (parsed == null) {
+            EZWeight.LOGGER.warn("Invalid AmmoId format in item: {}", id);
             return Optional.empty();
         }
+        return Optional.of(parsed);
     }
 
     public static boolean setGunId(ItemStack stack, ResourceLocation gunId) {
@@ -130,6 +136,7 @@ public class GunIdUtils {
 
         try {
             CompoundTag tag = stack.getTag();
+            if (tag == null) return false;
             tag.remove("GunId");
             if (tag.isEmpty()) {
                 stack.setTag(null);
@@ -146,6 +153,7 @@ public class GunIdUtils {
 
         try {
             CompoundTag tag = stack.getTag();
+            if (tag == null) return false;
             tag.remove("AttachmentId");
             if (tag.isEmpty()) {
                 stack.setTag(null);
@@ -162,6 +170,7 @@ public class GunIdUtils {
 
         try {
             CompoundTag tag = stack.getTag();
+            if (tag == null) return false;
             tag.remove("AmmoId");
             if (tag.isEmpty()) {
                 stack.setTag(null);
@@ -183,9 +192,46 @@ public class GunIdUtils {
         if (!TACZ_LOADED) return true;
 
         try {
-            return com.tacz.guns.api.TimelessAPI.getAllCommonGunIndex()
-                    .stream()
-                    .anyMatch(entry -> entry.getKey().equals(gunId));
+            Object res = com.tacz.guns.api.TimelessAPI.getAllCommonGunIndex();
+            if (res instanceof java.util.Set<?>) {
+                for (Object e : (java.util.Set<?>) res) {
+                    if (e instanceof java.util.Map.Entry<?, ?> entry) {
+                        Object key = entry.getKey();
+                        if (gunId.equals(key)) return true;
+                    } else if (gunId.equals(e)) {
+                        return true;
+                    }
+                }
+            } else if (res instanceof java.util.Map<?, ?> map) {
+                for (Object key : map.keySet()) {
+                    if (gunId.equals(key)) return true;
+                }
+            }
+            // Fallback por reflexión a posibles métodos alternativos
+            try {
+                Class<?> api = Class.forName("com.tacz.guns.api.TimelessAPI");
+                for (String name : new String[]{"getAllGunIndex"}) {
+                    try {
+                        java.lang.reflect.Method m = api.getMethod(name);
+                        Object r = m.invoke(null);
+                        if (r instanceof java.util.Set<?>) {
+                            for (Object e : (java.util.Set<?>) r) {
+                                if (e instanceof java.util.Map.Entry<?, ?> entry) {
+                                    Object key = entry.getKey();
+                                    if (gunId.equals(key)) return true;
+                                } else if (gunId.equals(e)) {
+                                    return true;
+                                }
+                            }
+                        } else if (r instanceof java.util.Map<?, ?> map2) {
+                            for (Object key : map2.keySet()) {
+                                if (gunId.equals(key)) return true;
+                            }
+                        }
+                    } catch (NoSuchMethodException ignored) {}
+                }
+            } catch (Exception ignored) {}
+            return false;
         } catch (Exception e) {
             EZWeight.LOGGER.error("Error checking GunId validity: {}", gunId, e);
             return false;
@@ -241,7 +287,11 @@ public class GunIdUtils {
         if (stack.isEmpty()) return 0.0;
 
         ResourceLocation baseId = getGunId(stack).orElseGet(() -> ForgeRegistries.ITEMS.getKey(stack.getItem()));
-        double baseWeight = baseId != null ? ItemWeightRegistry.getAllWeights().getOrDefault(baseId, 1.0) : 1.0;
+        double baseWeight = 1.0;
+        if (baseId != null) {
+            Double w = ItemWeightRegistry.getAllWeights().get(baseId);
+            baseWeight = (w != null) ? w : 1.0;
+        }
         double attachmentsWeight = getAttachmentsWeight(stack);
         double ammoWeight = getAmmoWeight(stack);
         return baseWeight + attachmentsWeight + ammoWeight;
@@ -256,7 +306,8 @@ public class GunIdUtils {
                     try {
                         String val = compound.getString(key);
                         if (val != null && !val.isEmpty()) {
-                            out.add(new ResourceLocation(val));
+                            ResourceLocation parsed = ResourceLocation.tryParse(val);
+                            if (parsed != null) out.add(parsed);
                         }
                     } catch (Exception ignored) {}
                 } else if (child.getId() == Tag.TAG_LIST) {
@@ -272,7 +323,8 @@ public class GunIdUtils {
                     try {
                         String val = list.getString(i);
                         if (val != null && !val.isEmpty()) {
-                            out.add(new ResourceLocation(val));
+                            ResourceLocation parsed = ResourceLocation.tryParse(val);
+                            if (parsed != null) out.add(parsed);
                         }
                     } catch (Exception ignored) {}
                 } else if (elem.getId() == Tag.TAG_COMPOUND || elem.getId() == Tag.TAG_LIST) {
@@ -295,6 +347,7 @@ public class GunIdUtils {
 
     public static double getAttachmentsWeight(ItemStack stack) {
         if (stack.isEmpty()) return 0.0;
+        if (!WeightConfig.COMMON.ATTACHMENT_WEIGHT_ENABLED.get()) return 0.0;
 
         double sum = 0.0;
         CompoundTag tag = stack.getTag();
@@ -319,7 +372,8 @@ public class GunIdUtils {
             }
         }
 
-        return sum;
+        double multiplier = WeightConfig.COMMON.ATTACHMENT_WEIGHT_MULTIPLIER.get();
+        return Math.max(0.0, sum * Math.max(0.0, multiplier));
     }
 
     private static ResourceLocation normalizeBaseId(ResourceLocation id) {
@@ -327,16 +381,17 @@ public class GunIdUtils {
         String ns = id.getNamespace();
         String path = id.getPath();
         if (path.endsWith("_data")) {
-            return new ResourceLocation(ns, path.substring(0, path.length() - 5));
+            return ResourceLocation.fromNamespaceAndPath(ns, path.substring(0, path.length() - 5));
         }
         if (path.endsWith("_display")) {
-            return new ResourceLocation(ns, path.substring(0, path.length() - 8));
+            return ResourceLocation.fromNamespaceAndPath(ns, path.substring(0, path.length() - 8));
         }
         return id;
     }
 
     public static double getAmmoWeight(ItemStack stack) {
         if (stack.isEmpty()) return 0.0;
+        if (!WeightConfig.COMMON.AMMO_WEIGHT_ENABLED.get()) return 0.0;
         CompoundTag tag = stack.getTag();
         if (tag == null) return 0.0;
 
@@ -354,32 +409,31 @@ public class GunIdUtils {
             break;
         }
 
-        double perRoundWeight = 0.02;
+        double perRoundWeight = WeightConfig.COMMON.AMMO_WEIGHT_PER_ROUND.get();
         if (selectedAmmoId != null) {
             Double cfg = resolveWeightForId(selectedAmmoId);
-            if (cfg != null) perRoundWeight = Math.min(cfg, 0.05);
+            if (cfg != null) perRoundWeight = cfg;
         } else if (getAmmoId(stack).isPresent()) {
             Double cfg = resolveWeightForId(getAmmoId(stack).get());
-            if (cfg != null) perRoundWeight = Math.min(cfg, 0.05);
+            if (cfg != null) perRoundWeight = cfg;
         }
 
         int rounds = estimateLoadedRounds(tag, getGunId(stack).orElse(null));
-        return Math.max(0.0, rounds * perRoundWeight);
+        double multiplier = WeightConfig.COMMON.AMMO_WEIGHT_MULTIPLIER.get();
+        return Math.max(0.0, rounds * perRoundWeight * Math.max(0.0, multiplier));
     }
 
     private static Double resolveWeightForId(ResourceLocation id) {
-        // 1) Directo
         Double w = ItemWeightRegistry.getAllWeights().get(id);
         if (w != null) return w;
-        // 2) Normalizar sufijos comunes (_data / _display)
         String path = id.getPath();
         if (path.endsWith("_data")) {
-            ResourceLocation base = new ResourceLocation(id.getNamespace(), path.substring(0, path.length() - 5));
+            ResourceLocation base = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), path.substring(0, path.length() - 5));
             w = ItemWeightRegistry.getAllWeights().get(base);
             if (w != null) return w;
         }
         if (path.endsWith("_display")) {
-            ResourceLocation base = new ResourceLocation(id.getNamespace(), path.substring(0, path.length() - 8));
+            ResourceLocation base = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), path.substring(0, path.length() - 8));
             w = ItemWeightRegistry.getAllWeights().get(base);
             if (w != null) return w;
         }
@@ -390,22 +444,47 @@ public class GunIdUtils {
         Set<ResourceLocation> keys = new HashSet<>();
         if (!TACZ_LOADED) return keys;
         try {
-            Class<?> api = Class.forName("com.tacz.guns.api.TimelessAPI");
-            for (String name : new String[]{"getAllCommonAttachmentIndex", "getAllAttachmentIndex"}) {
-                try {
-                    java.lang.reflect.Method m = api.getMethod(name);
-                    Object res = m.invoke(null);
-                    if (res instanceof java.util.Set) {
-                        for (Object e : ((java.util.Set<?>) res)) {
-                            if (e instanceof java.util.Map.Entry) {
-                                Object key = ((java.util.Map.Entry<?, ?>) e).getKey();
-                                if (key instanceof ResourceLocation rl) keys.add(rl);
-                            }
-                        }
+            Object res = com.tacz.guns.api.TimelessAPI.getAllCommonAttachmentIndex();
+            java.util.Set<?> set = (res instanceof java.util.Set<?>) ? (java.util.Set<?>) res : null;
+            if (set != null && !set.isEmpty()) {
+                for (Object e : set) {
+                    if (e instanceof java.util.Map.Entry<?, ?> entry) {
+                        Object key = entry.getKey();
+                        if (key instanceof ResourceLocation rl) keys.add(rl);
+                    } else if (e instanceof ResourceLocation rl) {
+                        keys.add(rl);
                     }
-                } catch (NoSuchMethodException ignored) {}
+                }
+            } else if (res instanceof java.util.Map<?, ?> map) {
+                for (Object key : map.keySet()) {
+                    if (key instanceof ResourceLocation rl) keys.add(rl);
+                }
+            } else {
+                try {
+                    Class<?> api = Class.forName("com.tacz.guns.api.TimelessAPI");
+                    for (String name : new String[]{"getAllAttachmentIndex"}) {
+                        try {
+                            java.lang.reflect.Method m = api.getMethod(name);
+                            Object r = m.invoke(null);
+                            if (r instanceof java.util.Set<?>) {
+                                for (Object e : ((java.util.Set<?>) r)) {
+                                    if (e instanceof java.util.Map.Entry<?, ?> entry) {
+                                        Object key = entry.getKey();
+                                        if (key instanceof ResourceLocation rl) keys.add(rl);
+                                    } else if (e instanceof ResourceLocation rl) {
+                                        keys.add(rl);
+                                    }
+                                }
+                            } else if (r instanceof java.util.Map<?, ?> map2) {
+                                for (Object key : map2.keySet()) {
+                                    if (key instanceof ResourceLocation rl) keys.add(rl);
+                                }
+                            }
+                        } catch (NoSuchMethodException ignored) {}
+                    }
+                } catch (Exception ignored) {}
             }
-        } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
         return keys;
     }
 
@@ -413,22 +492,49 @@ public class GunIdUtils {
         Set<ResourceLocation> keys = new HashSet<>();
         if (!TACZ_LOADED) return keys;
         try {
-            Class<?> api = Class.forName("com.tacz.guns.api.TimelessAPI");
-            for (String name : new String[]{"getAllCommonAmmoIndex", "getAllAmmoIndex"}) {
-                try {
-                    java.lang.reflect.Method m = api.getMethod(name);
-                    Object res = m.invoke(null);
-                    if (res instanceof java.util.Set) {
-                        for (Object e : ((java.util.Set<?>) res)) {
-                            if (e instanceof java.util.Map.Entry) {
-                                Object key = ((java.util.Map.Entry<?, ?>) e).getKey();
-                                if (key instanceof ResourceLocation rl) keys.add(rl);
-                            }
-                        }
+            // Intentar primero la lista "common" directamente
+            Object res = com.tacz.guns.api.TimelessAPI.getAllCommonAmmoIndex();
+            java.util.Set<?> set = (res instanceof java.util.Set<?>) ? (java.util.Set<?>) res : null;
+            if (set != null && !set.isEmpty()) {
+                for (Object e : set) {
+                    if (e instanceof java.util.Map.Entry<?, ?> entry) {
+                        Object key = entry.getKey();
+                        if (key instanceof ResourceLocation rl) keys.add(rl);
+                    } else if (e instanceof ResourceLocation rl) {
+                        keys.add(rl);
                     }
-                } catch (NoSuchMethodException ignored) {}
+                }
+            } else if (res instanceof java.util.Map<?, ?> map) {
+                for (Object key : map.keySet()) {
+                    if (key instanceof ResourceLocation rl) keys.add(rl);
+                }
+            } else {
+                // Fallback: usar reflexión para métodos alternativos si existen
+                try {
+                    Class<?> api = Class.forName("com.tacz.guns.api.TimelessAPI");
+                    for (String name : new String[]{"getAllAmmoIndex"}) {
+                        try {
+                            java.lang.reflect.Method m = api.getMethod(name);
+                            Object r = m.invoke(null);
+                            if (r instanceof java.util.Set<?>) {
+                                for (Object e : ((java.util.Set<?>) r)) {
+                                    if (e instanceof java.util.Map.Entry<?, ?> entry) {
+                                        Object key = entry.getKey();
+                                        if (key instanceof ResourceLocation rl) keys.add(rl);
+                                    } else if (e instanceof ResourceLocation rl) {
+                                        keys.add(rl);
+                                    }
+                                }
+                            } else if (r instanceof java.util.Map<?, ?> map2) {
+                                for (Object key : map2.keySet()) {
+                                    if (key instanceof ResourceLocation rl) keys.add(rl);
+                                }
+                            }
+                        } catch (NoSuchMethodException ignored) {}
+                    }
+                } catch (Exception ignored) {}
             }
-        } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
         return keys;
     }
 

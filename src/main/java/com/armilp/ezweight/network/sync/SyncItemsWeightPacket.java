@@ -1,6 +1,7 @@
 package com.armilp.ezweight.network.sync;
 
 import com.armilp.ezweight.data.ItemWeightRegistry;
+import com.tacz.guns.GunMod;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkEvent;
@@ -27,7 +28,12 @@ public class SyncItemsWeightPacket {
 
     public static void handle(SyncItemsWeightPacket packet, Supplier<NetworkEvent.Context> context) {
         context.get().enqueueWork(() -> {
-            ItemWeightRegistry.setWeight(packet.itemId, packet.weight);
+            // Verificar si el ítem pertenece al mod TACZ
+            if (packet.itemId.getNamespace().equals(GunMod.MOD_ID)) {
+                ItemWeightRegistry.setTACZWeight(packet.itemId, packet.weight);  // Usamos setTACZWeight para TACZ
+            } else {
+                ItemWeightRegistry.setWeight(packet.itemId, packet.weight);  // Usamos setWeight para otros ítems
+            }
         });
         context.get().setPacketHandled(true);
     }

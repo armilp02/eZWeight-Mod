@@ -39,8 +39,8 @@ public class WeightNamespaceScreen extends Screen {
             if (item == null) continue;
 
             ItemStack stack = new ItemStack(item);
-            String namespace = id.getNamespace();  // Aquí obtienes el namespace
-            String path = id.getPath();  // Aquí obtienes el path del ítem
+            String namespace = id.getNamespace();
+            String path = id.getPath();
 
             this.categorizedStacks
                     .computeIfAbsent(namespace, k -> new ArrayList<>()) // Utilizas el namespace como clave
@@ -52,7 +52,10 @@ public class WeightNamespaceScreen extends Screen {
         this.addRenderableWidget(this.list);
 
         List<ItemStackWithWeight> all = new ArrayList<>();
-        categorizedStacks.values().forEach(all::addAll);
+        for (Map.Entry<String, List<ItemStackWithWeight>> e : categorizedStacks.entrySet()) {
+            if ("tacz".equals(e.getKey())) continue; // Excluir TACZ del agregado 'all'
+            all.addAll(e.getValue());
+        }
         this.list.addNamespaceEntry("all", all);
 
         // Agregar las otras entradas
@@ -136,4 +139,3 @@ public class WeightNamespaceScreen extends Screen {
         }
     }
 }
-

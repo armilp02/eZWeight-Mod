@@ -40,41 +40,35 @@ public class GunIdEditScreen extends Screen {
         ResourceLocation effectiveId = gunInfo.getEffectiveId();
         double currentWeight = ItemWeightRegistry.getAllWeights().getOrDefault(effectiveId, 1.0);
 
-        // Weight box - centrado
-        weightBox = new EditBox(this.font, centerX - 100, centerY - 60, 200, 20,
+        weightBox = new EditBox(this.font, centerX - 90, centerY - 34, 180, 20,
                 Component.translatable("gui.ezweight.weight_placeholder"));
         weightBox.setValue(String.format("%.2f", currentWeight));
         weightBox.setResponder(this::onWeightChanged);
         this.addRenderableWidget(weightBox);
 
-        // ID box - centrado y más ancho
-        idBox = new EditBox(this.font, centerX - 150, centerY - 20, 300, 20,
+        idBox = new EditBox(this.font, centerX - 140, centerY, 280, 20,
                 Component.translatable("gui.ezweight.id_placeholder"));
         loadCurrentId();
         idBox.setResponder(this::onIdChanged);
         this.addRenderableWidget(idBox);
 
-        // Botones centrados en la parte inferior
-        int buttonY = centerY + 40;
+        int buttonY = centerY + 28;
 
-        // Save button
         this.addRenderableWidget(Button.builder(Component.translatable("gui.ezweight.save"), b -> {
             if (saveChanges()) {
-                this.minecraft.setScreen(parent);
+                if (this.minecraft != null) this.minecraft.setScreen(parent);
             }
-        }).bounds(centerX - 120, buttonY, 80, 20).build());
+        }).bounds(centerX - 115, buttonY, 75, 20).build());
 
-        // Cancel button
         this.addRenderableWidget(Button.builder(Component.translatable("gui.ezweight.cancel"), b -> {
-            this.minecraft.setScreen(parent);
-        }).bounds(centerX - 30, buttonY, 80, 20).build());
+            if (this.minecraft != null) this.minecraft.setScreen(parent);
+        }).bounds(centerX - 35, buttonY, 75, 20).build());
 
-        // Reset weight button
         this.addRenderableWidget(Button.builder(Component.translatable("gui.ezweight.reset_weight"), b -> {
             double estimatedWeight = estimateDefaultWeight();
-            weightBox.setValue(String.format("%.2f", estimatedWeight));
+            if (weightBox != null) weightBox.setValue(String.format("%.2f", estimatedWeight));
             hasWeightError = false;
-        }).bounds(centerX + 60, buttonY, 100, 20).build());
+        }).bounds(centerX + 55, buttonY, 95, 20).build());
     }
 
     private void loadCurrentId() {
@@ -116,22 +110,18 @@ public class GunIdEditScreen extends Screen {
             return;
         }
 
-        try {
-            ResourceLocation id = new ResourceLocation(value);
-            hasIdError = false;
-        } catch (Exception e) {
-            hasIdError = true;
-        }
+        ResourceLocation id = ResourceLocation.tryParse(value);
+        hasIdError = (id == null);
         updateIdBoxColor();
     }
 
     private void updateIdBoxColor() {
         if (hasIdError) {
-            idBox.setTextColor(0xFF5555); // Rojo para error
+            idBox.setTextColor(0xFF5555);
         } else if (!idBox.getValue().trim().isEmpty()) {
-            idBox.setTextColor(0x55FF55); // Verde para válido
+            idBox.setTextColor(0x55FF55);
         } else {
-            idBox.setTextColor(0xFFFFFF); // Blanco para neutral
+            idBox.setTextColor(0xFFFFFF);
         }
     }
 
@@ -151,7 +141,6 @@ public class GunIdEditScreen extends Screen {
             String idValue = idBox.getValue().trim();
             ResourceLocation targetId;
 
-            // Limpiar IDs existentes
             if (gunInfo.hasGunId()) {
                 GunIdUtils.removeGunId(stack);
             }
@@ -162,15 +151,17 @@ public class GunIdEditScreen extends Screen {
                 GunIdUtils.removeAmmoId(stack);
             }
 
-            // Aplicar nuevo ID o usar ID del item
             if (!idValue.isEmpty()) {
-                ResourceLocation newId = new ResourceLocation(idValue);
+                ResourceLocation newId = ResourceLocation.tryParse(idValue);
+                if (newId == null) {
+                    hasIdError = true;
+                    updateIdBoxColor();
+                    return false;
+                }
 
-                // Intentar aplicar como Gun ID primero
                 if (GunIdUtils.setGunId(stack, newId)) {
                     targetId = newId;
                 } else {
-                    // Si falla, aplicar como Attachment ID
                     GunIdUtils.setAttachmentId(stack, newId);
                     targetId = newId;
                 }
@@ -178,12 +169,11 @@ public class GunIdEditScreen extends Screen {
                 targetId = gunInfo.getItemId();
             }
 
-            // Actualizar peso
             ItemWeightRegistry.setWeight(targetId, newWeight);
             EZWeightNetwork.CHANNEL.sendToServer(new WeightUpdatePacket(targetId, newWeight));
 
-            if (parent instanceof WeightMenuScreen) {
-                ((WeightMenuScreen) parent).onWeightUpdated();
+            if (parent instanceof WeightMenuScreen weightMenuScreen) {
+                weightMenuScreen.onWeightUpdated();
             }
 
             return true;
@@ -218,38 +208,27 @@ public class GunIdEditScreen extends Screen {
         int centerX = this.width / 2;
         int centerY = this.height / 2;
 
-        // Título centrado
-        graphics.drawCenteredString(this.font, this.title, centerX, centerY - 120, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, this.title, centerX, centerY - 90, 0xFFFFFF);
 
-        // Item icon centrado
-        graphics.renderItem(stack, centerX - 8, centerY - 100);
+        graphics.renderItem(stack, centerX - 8, centerY - 72);
 
-        // Nombre del item centrado
         String itemName = gunInfo.getDisplayName();
-        graphics.drawCenteredString(this.font, itemName, centerX, centerY - 80, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, itemName, centerX, centerY - 54, 0xFFFFFF);
 
-        // ID del item centrado y más pequeño
-        String itemIdText = Component.translatable("gui.ezweight.item_id", gunInfo.getItemId().toString()).getString();
-        graphics.drawCenteredString(this.font, itemIdText, centerX, centerY - 65, 0xAAAAAA);
+        graphics.drawString(this.font, "Weight:", centerX - 150, centerY - 46, 0xFFFFFF);
+        graphics.drawString(this.font, "Custom ID:", centerX - 150, centerY - 12, 0xFFFFFF);
 
-        // Labels para los campos
-        graphics.drawString(this.font, "Weight:", centerX - 150, centerY - 75, 0xFFFFFF);
-        graphics.drawString(this.font, "Custom ID:", centerX - 150, centerY - 35, 0xFFFFFF);
-
-        // Estado de validación del ID
         if (!idBox.getValue().trim().isEmpty()) {
             String status = hasIdError ? "✗ Invalid" : "✓ Valid";
             int color = hasIdError ? 0xFF5555 : 0x55FF55;
-            graphics.drawString(this.font, status, centerX + 160, centerY - 15, color);
+            graphics.drawString(this.font, status, centerX + 150, centerY + 4, color);
         }
 
-        // Información actual del item (abajo)
-        renderCurrentIdInfo(graphics, centerY + 70);
+        renderCurrentIdInfo(graphics, centerY + 56);
 
-        // Mensajes de error centrados
         if (hasWeightError) {
             String errorMsg = Component.translatable("gui.ezweight.invalid_weight").getString();
-            graphics.drawCenteredString(this.font, errorMsg, centerX, centerY - 45, 0xFF5555);
+            graphics.drawCenteredString(this.font, errorMsg, centerX, centerY - 22, 0xFF5555);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -279,13 +258,13 @@ public class GunIdEditScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) { // ESC
-            this.minecraft.setScreen(parent);
+        if (keyCode == 256) {
+            if (this.minecraft != null) this.minecraft.setScreen(parent);
             return true;
         }
-        if (keyCode == 257 || keyCode == 335) { // ENTER
+        if (keyCode == 257 || keyCode == 335) {
             if (saveChanges()) {
-                this.minecraft.setScreen(parent);
+                if (this.minecraft != null) this.minecraft.setScreen(parent);
             }
             return true;
         }
@@ -295,7 +274,7 @@ public class GunIdEditScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        weightBox.tick();
-        idBox.tick();
+        if (weightBox != null) weightBox.tick();
+        if (idBox != null) idBox.tick();
     }
 }
