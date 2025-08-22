@@ -1,7 +1,4 @@
 package com.armilp.ezweight.config;
-
-import com.armilp.ezweight.player.DynamicMaxWeightCalculator;
-import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.ForgeConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -43,6 +40,17 @@ public class WeightConfig {
         public final ForgeConfigSpec.BooleanValue FORCE_SNEAK_ENABLED;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> FORCE_SNEAK_WEIGHT_RANGES;
 
+        public final ForgeConfigSpec.BooleanValue ATTACHMENT_WEIGHT_ENABLED;
+        public final ForgeConfigSpec.DoubleValue ATTACHMENT_WEIGHT_MULTIPLIER;
+        public final ForgeConfigSpec.BooleanValue AMMO_WEIGHT_ENABLED;
+        public final ForgeConfigSpec.DoubleValue AMMO_WEIGHT_PER_ROUND;
+        public final ForgeConfigSpec.DoubleValue AMMO_WEIGHT_MULTIPLIER;
+
+        public final ForgeConfigSpec.BooleanValue ITEM_TOOLTIP_ENABLED;
+        public final ForgeConfigSpec.ConfigValue<String> ITEM_TOOLTIP_COLOR_BASE;
+        public final ForgeConfigSpec.ConfigValue<String> ITEM_TOOLTIP_COLOR_TOTAL;
+
+
         public Common(ForgeConfigSpec.Builder builder) {
             builder.push("General");
             BASE_WEIGHT = builder
@@ -56,6 +64,17 @@ public class WeightConfig {
             USE_DYNAMIC_WEIGHT = builder
                     .comment("If true, uses dynamic weight calculations (base weight, food, strength, etc.). If false, only uses max_weight.")
                     .define("use_dynamic_weight", false);
+
+            ITEM_TOOLTIP_ENABLED = builder
+                    .comment("Enable or disable displaying item weight tooltips.")
+                    .define("item_tooltip_enabled", true);
+            ITEM_TOOLTIP_COLOR_BASE = builder
+                    .comment("Color for base weight in item tooltip.")
+                    .define("item_tooltip_color_base", "#FFD700");  // Color dorado por defecto
+            ITEM_TOOLTIP_COLOR_TOTAL = builder
+                    .comment("Color for total weight in item tooltip.")
+                    .define("item_tooltip_color_total", "#FFFF00"); // Color amarillo por defecto
+
             builder.pop();
 
             builder.push("NoJump");
@@ -89,7 +108,7 @@ public class WeightConfig {
                     .comment("Damage per second while overweight.")
                     .defineInRange("damage_per_second", 1.4, 0.0, 100.0);
 
-            PROGRESSIVE_DAMAGE_ENABLED = builder.define("progressive_damage_enabled", true);
+            PROGRESSIVE_DAMAGE_ENABLED = builder.define("progressive_damage_enabled", false);
 
             PROGRESSIVE_WEIGHT_STEP = builder
                     .comment("Weight units per extra damage step.")
@@ -108,6 +127,25 @@ public class WeightConfig {
                     .defineList("force_sneak_weight_ranges",
                             Arrays.asList("115", "max"),
                             val -> isValidDoubleOrMax(val));
+            builder.pop();
+
+            builder.push("TACZ GunWeight");
+            ATTACHMENT_WEIGHT_ENABLED = builder
+                    .comment("If true, includes attachments' configured weight in gun total weight.")
+                    .define("attachment_weight_enabled", true);
+            ATTACHMENT_WEIGHT_MULTIPLIER = builder
+                    .comment("Multiplier applied to summed attachment weight.")
+                    .defineInRange("attachment_weight_multiplier", 1.0, 0.0, 20.0);
+
+            AMMO_WEIGHT_ENABLED = builder
+                    .comment("If true, includes ammo weight in gun total weight.")
+                    .define("ammo_weight_enabled", true);
+            AMMO_WEIGHT_PER_ROUND = builder
+                    .comment("Default weight per single bullet/round.")
+                    .defineInRange("ammo_weight_per_round", 0.02, 0.0, 1.0);
+            AMMO_WEIGHT_MULTIPLIER = builder
+                    .comment("Multiplier applied to computed ammo weight (rounds * per_round).")
+                    .defineInRange("ammo_weight_multiplier", 1.0, 0.0, 20.0);
             builder.pop();
         }
 
@@ -157,7 +195,7 @@ public class WeightConfig {
             builder.push("MainHUD Position");
             MAIN_HUD_ANCHOR = builder
                     .comment("Anchor position of the main weight HUD box relative to the inventory screen. Options: TOP, LEFT, RIGHT, BOTTOM")
-                    .defineEnum("mainHudAnchor", InventoryAnchor.TOP);
+                    .defineEnum("mainHudAnchor", InventoryAnchor.LEFT);
             MAIN_HUD_OFFSET_X = builder
                     .comment("X offset from the anchored position")
                     .defineInRange("mainHudOffsetX", -10, -500, 500);
