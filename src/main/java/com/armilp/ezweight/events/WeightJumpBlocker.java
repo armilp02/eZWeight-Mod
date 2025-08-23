@@ -2,6 +2,7 @@ package com.armilp.ezweight.events;
 
 import com.armilp.ezweight.commands.WeightCommands;
 import com.armilp.ezweight.config.WeightConfig;
+import com.armilp.ezweight.player.DynamicMaxWeightCalculator;
 import com.armilp.ezweight.player.PlayerWeightHandler;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -27,13 +28,16 @@ public class WeightJumpBlocker {
         ServerPlayer serverPlayer = (ServerPlayer) player;
         if (!WeightCommands.isWeightEnabledFor(serverPlayer)) return;
 
-        double weight = PlayerWeightHandler.getTotalWeight(player);
-        if (isJumpDisabled(weight)) {
+        double currentWeight = PlayerWeightHandler.getTotalWeight(player);
+        double maxWeight = DynamicMaxWeightCalculator.calculate(player);
+
+        if (currentWeight > maxWeight || isJumpDisabled(currentWeight)) {
             player.setDeltaMovement(player.getDeltaMovement().x, 0, player.getDeltaMovement().z);
             player.hurtMarked = true;
 
             serverPlayer.displayClientMessage(
-                    Component.translatable("message.ezweight.jump_blocked").withStyle(ChatFormatting.RED), true
+                    Component.translatable("message.ezweight.jump_blocked")
+                            .withStyle(ChatFormatting.RED), true
             );
         }
     }
