@@ -2,6 +2,7 @@ package com.armilp.ezweight.levels;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.config.WeightConfig;
+import com.armilp.ezweight.registry.ModEffects;
 import com.google.gson.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -9,7 +10,7 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 
 import java.io.*;
-        import java.nio.file.Path;
+import java.nio.file.Path;
 import java.util.*;
 
 public class WeightLevelManager {
@@ -47,8 +48,8 @@ public class WeightLevelManager {
                         MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(new ResourceLocation(id));
                         if (effect != null) {
                             int amplifier = effObj.has("amplifier") ? effObj.get("amplifier").getAsInt() : 0;
-                            int duration = effObj.has("duration") ? effObj.get("duration").getAsInt() : 200;
-                            effects.add(new MobEffectInstance(effect, duration, amplifier, true, true));
+                            int duration = effObj.has("duration") ? effObj.get("duration").getAsInt() : 6000;
+                            effects.add(new MobEffectInstance(effect, duration, amplifier, false, false, true));
                         } else {
                             EZWeight.LOGGER.warn("Unknown effect '{}' in weight level '{}'", id, name);
                         }
@@ -77,16 +78,25 @@ public class WeightLevelManager {
         double step = range / 6.0;
 
         levels.add(createLevel("Unburdened", base, base + step - 0.01));
-        levels.add(createLevel("Light Load", base + step, base + step * 2 - 0.01));
-        levels.add(createLevel("Moderate Load", base + step * 2, base + step * 3 - 0.01, effect("minecraft:slowness", 0)));
+
+        levels.add(createLevel("Light Load", base + step, base + step * 2 - 0.01,
+                effect("ezweight:light_encumbered", 0)));
+
+        levels.add(createLevel("Moderate Load", base + step * 2, base + step * 3 - 0.01,
+                effect("ezweight:encumbered", 0)));
+
         levels.add(createLevel("Heavy Load", base + step * 3, base + step * 4 - 0.01,
-                effect("minecraft:slowness", 1), effect("minecraft:mining_fatigue", 0)));
+                effect("ezweight:heavily_encumbered", 0)));
+
         levels.add(createLevel("Very Heavy Load", base + step * 4, base + step * 5 - 0.01,
-                effect("minecraft:slowness", 2), effect("minecraft:mining_fatigue", 1)));
+                effect("ezweight:overburdened", 0)));
+
         levels.add(createLevel("Overburdened", base + step * 5, max - 0.01,
-                effect("minecraft:slowness", 3), effect("minecraft:weakness", 0)));
-        levels.add(createLevel("Crushed", max, max,
-                effect("minecraft:slowness", 4), effect("minecraft:weakness", 1)));
+                effect("ezweight:crushed", 0)));
+
+        levels.add(createLevel("Crushed", max, Double.MAX_VALUE,
+                effect("ezweight:crushed", 0),
+                effect("minecraft:weakness", 0)));
 
         root.add("levels", levels);
         root.addProperty("version", 1);
@@ -95,15 +105,12 @@ public class WeightLevelManager {
             file.getParentFile().mkdirs();
             try (FileWriter writer = new FileWriter(file)) {
                 GSON.toJson(root, writer);
-                EZWeight.LOGGER.info("Generated balanced weight levels based on base_weight = {} and max_weight = {}", base, max);
+                EZWeight.LOGGER.info("Generated weight levels with custom encumbrance effects (base={}, max={})", base, max);
             }
         } catch (IOException e) {
             EZWeight.LOGGER.error("Failed to write default levels config!", e);
         }
     }
-
-
-
 
     private static JsonObject createLevel(String name, double minWeight, double maxWeight, JsonObject... effects) {
         JsonObject obj = new JsonObject();
@@ -122,7 +129,7 @@ public class WeightLevelManager {
         JsonObject obj = new JsonObject();
         obj.addProperty("effect", id);
         obj.addProperty("amplifier", amplifier);
-        obj.addProperty("duration", 200); // ticks por defecto
+        obj.addProperty("duration", 6000);
         return obj;
     }
 
@@ -156,7 +163,7 @@ public class WeightLevelManager {
                     MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(new ResourceLocation(effObj.get("effect").getAsString()));
                     int amplifier = effObj.get("amplifier").getAsInt();
                     int duration = effObj.get("duration").getAsInt();
-                    effects.add(new MobEffectInstance(effect, duration, amplifier, true, true));
+                    effects.add(new MobEffectInstance(effect, duration, amplifier, false, false, true));
                 }
 
                 LEVELS.add(new WeightLevel(name, min, max, effects));
