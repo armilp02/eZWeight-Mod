@@ -4,6 +4,7 @@ import com.armilp.ezweight.commands.WeightCommands;
 import com.armilp.ezweight.levels.WeightLevel;
 import com.armilp.ezweight.levels.WeightLevelManager;
 import com.armilp.ezweight.player.PlayerWeightHandler;
+import com.armilp.ezweight.registry.ModEffects;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
@@ -17,11 +18,19 @@ import java.util.List;
 @Mod.EventBusSubscriber
 public class WeightEventHandler {
 
+    private static final int EFFECT_DURATION = 6000;
+    private static final int CHECK_INTERVAL = 20;
+    private static int tickCounter = 0;
+
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || event.player.level().isClientSide) return;
 
         if (!(event.player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) return;
+
+        tickCounter++;
+        if (tickCounter < CHECK_INTERVAL) return;
+        tickCounter = 0;
 
         if (!WeightCommands.isWeightEnabledFor(serverPlayer)) {
             removeWeightEffects(serverPlayer);
@@ -31,7 +40,7 @@ public class WeightEventHandler {
         double totalWeight = PlayerWeightHandler.getTotalWeight(serverPlayer);
         WeightLevel currentLevel = WeightLevelManager.getLevelForWeight(totalWeight);
 
-        if (currentLevel == null) {
+        if (currentLevel == null || currentLevel.effects().isEmpty()) {
             removeWeightEffects(serverPlayer);
             return;
         }
@@ -55,12 +64,15 @@ public class WeightEventHandler {
             MobEffect effect = effectInstance.getEffect();
             MobEffectInstance currentEffect = serverPlayer.getEffect(effect);
 
-            if (currentEffect == null || currentEffect.getAmplifier() != effectInstance.getAmplifier()) {
+            if (currentEffect == null ||
+                    currentEffect.getAmplifier() != effectInstance.getAmplifier() ||
+                    currentEffect.getDuration() < 100) {
+
                 serverPlayer.addEffect(new MobEffectInstance(
                         effect,
-                        6000,
+                        EFFECT_DURATION,
                         effectInstance.getAmplifier(),
-                        true,
+                        false,
                         false,
                         true
                 ));
@@ -81,6 +93,14 @@ public class WeightEventHandler {
     }
 
     private static boolean isWeightEffect(MobEffect effect) {
+        if (effect == ModEffects.LIGHT_ENCUMBERED.get() ||
+                effect == ModEffects.ENCUMBERED.get() ||
+                effect == ModEffects.HEAVILY_ENCUMBERED.get() ||
+                effect == ModEffects.OVERBURDENED.get() ||
+                effect == ModEffects.CRUSHED.get()) {
+            return true;
+        }
+
         return WeightLevelManager.getLevels().stream()
                 .flatMap(level -> level.effects().stream())
                 .anyMatch(instance -> instance.getEffect().equals(effect));
