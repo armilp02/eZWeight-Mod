@@ -27,6 +27,7 @@ import java.util.*;
 public class ItemWeightRegistry {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Map<ResourceLocation, Double> ITEM_WEIGHTS = new HashMap<>();
+    private static final Map<ResourceLocation, Double> GUN_AMMO_WEIGHTS = new HashMap<>();
     private static final String FILE_NAME = "items.json";
     private static final String DEFAULT_ASSET_PATH = "/assets/ezweight/items.json";
     private static File configFile;
@@ -71,18 +72,42 @@ public class ItemWeightRegistry {
 
     private static void loadFromFile(File file) {
         try (FileReader reader = new FileReader(file)) {
-            Type type = new TypeToken<Map<String, Map<String, Double>>>() {}.getType();
-            Map<String, Map<String, Double>> categorizedMap = GSON.fromJson(reader, type);
+            Type type = new TypeToken<Map<String, Map<String, Object>>>() {}.getType();
+            Map<String, Map<String, Object>> categorizedMap = GSON.fromJson(reader, type);
 
             ITEM_WEIGHTS.clear();
+            GUN_AMMO_WEIGHTS.clear();
             boolean updated = false;
 
             if (categorizedMap != null) {
-                for (Map.Entry<String, Map<String, Double>> categoryEntry : categorizedMap.entrySet()) {
-                    for (Map.Entry<String, Double> entry : categoryEntry.getValue().entrySet()) {
+                for (Map.Entry<String, Map<String, Object>> categoryEntry : categorizedMap.entrySet()) {
+                    for (Map.Entry<String, Object> entry : categoryEntry.getValue().entrySet()) {
                         try {
                             ResourceLocation id = new ResourceLocation(entry.getKey());
-                            ITEM_WEIGHTS.put(id, entry.getValue());
+                            Object value = entry.getValue();
+
+                            if (value instanceof Map) {
+                                Map<?, ?> itemData = (Map<?, ?>) value;
+
+                                if (itemData.containsKey("weight")) {
+                                    Object weightObj = itemData.get("weight");
+                                    double weight = (weightObj instanceof Number)
+                                            ? ((Number) weightObj).doubleValue()
+                                            : 1.0;
+                                    ITEM_WEIGHTS.put(id, weight);
+                                }
+
+                                if (itemData.containsKey("ammo_weight")) {
+                                    Object ammoWeightObj = itemData.get("ammo_weight");
+                                    double ammoWeight = (ammoWeightObj instanceof Number)
+                                            ? ((Number) ammoWeightObj).doubleValue()
+                                            : 0.02;
+                                    GUN_AMMO_WEIGHTS.put(id, ammoWeight);
+                                }
+                            } else if (value instanceof Number) {
+                                double weight = ((Number) value).doubleValue();
+                                ITEM_WEIGHTS.put(id, weight);
+                            }
                         } catch (Exception ex) {
                             EZWeight.LOGGER.warn("Invalid item ID in config: {}", entry.getKey());
                         }
@@ -107,14 +132,27 @@ public class ItemWeightRegistry {
 
     public static void saveToFile(File file) {
         try {
-            Map<String, Map<String, Double>> categorizedMap = new LinkedHashMap<>();
+            Map<String, Map<String, Object>> categorizedMap = new LinkedHashMap<>();
 
             for (Map.Entry<ResourceLocation, Double> entry : ITEM_WEIGHTS.entrySet()) {
                 ResourceLocation id = entry.getKey();
                 String namespace = id.getNamespace();
-                categorizedMap
-                        .computeIfAbsent(namespace, k -> new LinkedHashMap<>())
-                        .put(id.toString(), entry.getValue());
+
+                Double ammoWeight = GUN_AMMO_WEIGHTS.get(id);
+
+                if (ammoWeight != null) {
+                    Map<String, Object> itemData = new LinkedHashMap<>();
+                    itemData.put("weight", entry.getValue());
+                    itemData.put("ammo_weight", ammoWeight);
+
+                    categorizedMap
+                            .computeIfAbsent(namespace, k -> new LinkedHashMap<>())
+                            .put(id.toString(), itemData);
+                } else {
+                    categorizedMap
+                            .computeIfAbsent(namespace, k -> new LinkedHashMap<>())
+                            .put(id.toString(), entry.getValue());
+                }
             }
 
             try (FileWriter writer = new FileWriter(file)) {
@@ -128,7 +166,7 @@ public class ItemWeightRegistry {
     }
 
     private static void generateDefaultFile(File file) {
-        Map<String, Map<String, Double>> categorizedWeights = new HashMap<>();
+        Map<String, Map<String, Object>> categorizedWeights = new HashMap<>();
         ITEM_WEIGHTS.clear();
 
         for (Item item : ForgeRegistries.ITEMS.getValues()) {
@@ -217,7 +255,7 @@ public class ItemWeightRegistry {
         return Math.round(baseWeight * 100.0) / 100.0;
     }
 
-    private static void addTACZGunsToMap(Map<String, Map<String, Double>> categorizedWeights, Map<ResourceLocation, Double> weightsMap) {
+    private static void addTACZGunsToMap(Map<String, Map<String, Object>> categorizedWeights, Map<ResourceLocation, Double> weightsMap) {
         if (!taczLoaded) return;
         Set<Map.Entry<ResourceLocation, CommonGunIndex>> entries = com.tacz.guns.api.TimelessAPI.getAllCommonGunIndex();
         for (Map.Entry<ResourceLocation, CommonGunIndex> entry : entries) {
@@ -231,7 +269,6 @@ public class ItemWeightRegistry {
                 EZWeight.LOGGER.info("Added TACZ gun '{}' with estimated weight {}", gunId, weight);
             }
         }
-        // Añadir índices de attachments (no items) con peso estimado si faltan
         try {
             Set<ResourceLocation> attachmentIndexIds = fetchTimelessIndexKeys("getAllCommonAttachmentIndex", "getAllAttachmentIndex");
             for (ResourceLocation attId : attachmentIndexIds) {
@@ -247,7 +284,6 @@ public class ItemWeightRegistry {
         } catch (Exception e) {
             EZWeight.LOGGER.warn("Failed to add TACZ attachment indexes to weights", e);
         }
-        // Añadir índices de munición (no items) con peso estimado si faltan
         try {
             Set<ResourceLocation> ammoIndexIds = fetchTimelessIndexKeys("getAllCommonAmmoIndex", "getAllAmmoIndex");
             for (ResourceLocation ammoId : ammoIndexIds) {
@@ -301,7 +337,7 @@ public class ItemWeightRegistry {
         return 5.0;
     }
 
-    private static boolean addMissingItemsAndTACZGuns(Map<String, Map<String, Double>> categorizedMap) {
+    private static boolean addMissingItemsAndTACZGuns(Map<String, Map<String, Object>> categorizedMap) {
         boolean updated = false;
         for (Item item : ForgeRegistries.ITEMS.getValues()) {
             ResourceLocation id = ForgeRegistries.ITEMS.getKey(item);
@@ -457,7 +493,6 @@ public class ItemWeightRegistry {
                 }
             }
 
-            // Añadir attachments por índice (si la API está disponible)
             Set<ResourceLocation> attachmentKeys = fetchTimelessIndexKeys("getAllCommonAttachmentIndex", "getAllAttachmentIndex");
             for (ResourceLocation attachmentId : attachmentKeys) {
                 if (attachmentId != null && attachmentId.getNamespace().equals(namespace)) {
@@ -481,7 +516,6 @@ public class ItemWeightRegistry {
                 }
             }
 
-            // Añadir ammo por índice (si la API está disponible)
             Set<ResourceLocation> ammoKeys = fetchTimelessIndexKeys("getAllCommonAmmoIndex", "getAllAmmoIndex");
             for (ResourceLocation ammoId : ammoKeys) {
                 if (ammoId != null && ammoId.getNamespace().equals(namespace)) {
@@ -510,11 +544,9 @@ public class ItemWeightRegistry {
     }
 
     public static double getWeight(ItemStack stack) {
-        // Solo armas TACZ: sumar dinámicamente attachments y munición instalados
         if (taczLoaded && stack.getItem() instanceof AbstractGunItem) {
             return GunIdUtils.calculateTotalWeight(stack);
         }
-        // Resto de ítems: comportamiento previo por id efectivo
         ResourceLocation effectiveId = getEffectiveId(stack);
         return ITEM_WEIGHTS.getOrDefault(effectiveId, 1.0);
     }
@@ -537,6 +569,15 @@ public class ItemWeightRegistry {
         setTACZWeight(effectiveId, weight);
     }
 
+    public static Double getGunAmmoWeight(ResourceLocation gunId) {
+        return GUN_AMMO_WEIGHTS.get(gunId);
+    }
+
+    public static void setGunAmmoWeight(ResourceLocation gunId, double ammoWeight) {
+        GUN_AMMO_WEIGHTS.put(gunId, ammoWeight);
+        EZWeight.LOGGER.info("Gun ammo weight set: {} = {}", gunId, ammoWeight);
+    }
+
     public static File getConfigFile() {
         return configFile;
     }
@@ -548,8 +589,8 @@ public class ItemWeightRegistry {
         }
 
         try (FileReader reader = new FileReader(configFile)) {
-            Type type = new TypeToken<Map<String, Map<String, Double>>>() {}.getType();
-            Map<String, Map<String, Double>> categorizedMap = GSON.fromJson(reader, type);
+            Type type = new TypeToken<Map<String, Map<String, Object>>>() {}.getType();
+            Map<String, Map<String, Object>> categorizedMap = GSON.fromJson(reader, type);
 
             boolean updated = false;
             updated |= addMissingItemsAndTACZGuns(categorizedMap != null ? categorizedMap : new HashMap<>());
@@ -568,18 +609,41 @@ public class ItemWeightRegistry {
     public static void reloadFromFile() {
         if (configFile != null && configFile.exists()) {
             try (FileReader reader = new FileReader(configFile)) {
-                Type type = new TypeToken<Map<String, Map<String, Double>>>() {}.getType();
-                Map<String, Map<String, Double>> categorizedMap = GSON.fromJson(reader, type);
+                Type type = new TypeToken<Map<String, Map<String, Object>>>() {}.getType();
+                Map<String, Map<String, Object>> categorizedMap = GSON.fromJson(reader, type);
 
                 ITEM_WEIGHTS.clear();
+                GUN_AMMO_WEIGHTS.clear();
 
                 if (categorizedMap != null) {
-                    for (Map.Entry<String, Map<String, Double>> categoryEntry : categorizedMap.entrySet()) {
-                        for (Map.Entry<String, Double> entry : categoryEntry.getValue().entrySet()) {
+                    for (Map.Entry<String, Map<String, Object>> categoryEntry : categorizedMap.entrySet()) {
+                        for (Map.Entry<String, Object> entry : categoryEntry.getValue().entrySet()) {
                             try {
                                 ResourceLocation id = new ResourceLocation(entry.getKey());
-                                double weight = entry.getValue();
-                                ITEM_WEIGHTS.put(id, weight);
+                                Object value = entry.getValue();
+
+                                if (value instanceof Map) {
+                                    Map<?, ?> itemData = (Map<?, ?>) value;
+
+                                    if (itemData.containsKey("weight")) {
+                                        Object weightObj = itemData.get("weight");
+                                        double weight = (weightObj instanceof Number)
+                                                ? ((Number) weightObj).doubleValue()
+                                                : 1.0;
+                                        ITEM_WEIGHTS.put(id, weight);
+                                    }
+
+                                    if (itemData.containsKey("ammo_weight")) {
+                                        Object ammoWeightObj = itemData.get("ammo_weight");
+                                        double ammoWeight = (ammoWeightObj instanceof Number)
+                                                ? ((Number) ammoWeightObj).doubleValue()
+                                                : 0.02;
+                                        GUN_AMMO_WEIGHTS.put(id, ammoWeight);
+                                    }
+                                } else if (value instanceof Number) {
+                                    double weight = ((Number) value).doubleValue();
+                                    ITEM_WEIGHTS.put(id, weight);
+                                }
                             } catch (Exception e) {
                                 EZWeight.LOGGER.warn("Invalid entry in item weights config: {}", entry.getKey(), e);
                             }

@@ -2,10 +2,7 @@ package com.armilp.ezweight.network;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.network.gui.OpenWeightGuiPacket;
-import com.armilp.ezweight.network.sync.SyncItemsWeightPacket;
-import com.armilp.ezweight.network.sync.WeightLevelsSyncPacket;
-import com.armilp.ezweight.network.sync.WeightSyncPacket;
-import com.armilp.ezweight.network.sync.WeightUpdatePacket;
+import com.armilp.ezweight.network.sync.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkDirection;
@@ -19,7 +16,7 @@ import java.util.Optional;
 public class EZWeightNetwork {
     private static final String PROTOCOL_VERSION = "1.0";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(EZWeight.MODID, "main"),
+            ResourceLocation.fromNamespaceAndPath(EZWeight.MODID, "main"),
             () -> PROTOCOL_VERSION,
             PROTOCOL_VERSION::equals,
             PROTOCOL_VERSION::equals
@@ -64,6 +61,20 @@ public class EZWeightNetwork {
                 SyncItemsWeightPacket::encode,
                 SyncItemsWeightPacket::decode,
                 SyncItemsWeightPacket::handle
+        );
+
+        CHANNEL.registerMessage(id++,
+                AmmoWeightUpdatePacket.class,
+                AmmoWeightUpdatePacket::encode,
+                AmmoWeightUpdatePacket::decode,
+                AmmoWeightUpdatePacket::handle
+        );
+
+        CHANNEL.registerMessage(id++,
+                SyncAmmoWeightPacket.class,
+                SyncAmmoWeightPacket::encode,
+                SyncAmmoWeightPacket::decode,
+                SyncAmmoWeightPacket::handle
         );
     }
 

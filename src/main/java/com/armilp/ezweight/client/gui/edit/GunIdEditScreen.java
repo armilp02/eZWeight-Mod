@@ -3,6 +3,7 @@ package com.armilp.ezweight.client.gui.edit;
 import com.armilp.ezweight.client.gui.WeightMenuScreen;
 import com.armilp.ezweight.data.ItemWeightRegistry;
 import com.armilp.ezweight.network.EZWeightNetwork;
+import com.armilp.ezweight.network.sync.AmmoWeightUpdatePacket;
 import com.armilp.ezweight.network.sync.WeightUpdatePacket;
 import com.armilp.ezweight.util.GunIdUtils;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,8 +20,10 @@ public class GunIdEditScreen extends Screen {
     private final ItemStack stack;
     private EditBox weightBox;
     private EditBox idBox;
+    private EditBox ammoWeightBox;
     private boolean hasWeightError = false;
     private boolean hasIdError = false;
+    private boolean hasAmmoWeightError = false;
     private final GunIdUtils.GunInfo gunInfo;
 
     public GunIdEditScreen(Screen parent, ItemStack stack) {
@@ -53,6 +56,20 @@ public class GunIdEditScreen extends Screen {
         this.addRenderableWidget(idBox);
 
         int buttonY = centerY + 28;
+
+        if (gunInfo.hasGunId()) {
+            ResourceLocation gunId = gunInfo.getGunId().get();
+            Double currentAmmoWeight = ItemWeightRegistry.getGunAmmoWeight(gunId);
+
+            ammoWeightBox = new EditBox(this.font, centerX - 90, centerY + 34, 180, 20,
+                    Component.translatable("gui.ezweight.ammo_weight_placeholder"));
+            ammoWeightBox.setValue(String.format("%.4f",
+                    currentAmmoWeight != null ? currentAmmoWeight : 0.02));
+            ammoWeightBox.setResponder(this::onAmmoWeightChanged);
+            this.addRenderableWidget(ammoWeightBox);
+
+            buttonY = centerY + 62;
+        }
 
         this.addRenderableWidget(Button.builder(Component.translatable("gui.ezweight.save"), b -> {
             if (saveChanges()) {
@@ -93,6 +110,21 @@ public class GunIdEditScreen extends Screen {
         }
     }
 
+    private void onAmmoWeightChanged(String value) {
+        try {
+            double weight = Double.parseDouble(value.replace(",", "."));
+            hasAmmoWeightError = weight < 0;
+            if (ammoWeightBox != null) {
+                ammoWeightBox.setTextColor(hasAmmoWeightError ? 0xFF5555 : 0xFFFFFF);
+            }
+        } catch (NumberFormatException e) {
+            hasAmmoWeightError = true;
+            if (ammoWeightBox != null) {
+                ammoWeightBox.setTextColor(0xFF5555);
+            }
+        }
+    }
+
     private void onIdChanged(String value) {
         if (value.trim().isEmpty()) {
             hasIdError = false;
@@ -126,7 +158,7 @@ public class GunIdEditScreen extends Screen {
     }
 
     private boolean saveChanges() {
-        if (hasWeightError || hasIdError) {
+        if (hasWeightError || hasIdError || hasAmmoWeightError) {
             return false;
         }
 
@@ -171,6 +203,18 @@ public class GunIdEditScreen extends Screen {
 
             ItemWeightRegistry.setWeight(targetId, newWeight);
             EZWeightNetwork.CHANNEL.sendToServer(new WeightUpdatePacket(targetId, newWeight));
+
+            if (gunInfo.hasGunId() && ammoWeightBox != null) {
+                try {
+                    double ammoWeight = Double.parseDouble(ammoWeightBox.getValue().replace(",", "."));
+                    if (ammoWeight >= 0) {
+                        ItemWeightRegistry.setGunAmmoWeight(gunInfo.getGunId().get(), ammoWeight);
+                        EZWeightNetwork.CHANNEL.sendToServer(new AmmoWeightUpdatePacket(gunInfo.getGunId().get(), ammoWeight));
+                    }
+                } catch (Exception e) {
+                    hasAmmoWeightError = true;
+                }
+            }
 
             if (parent instanceof WeightMenuScreen weightMenuScreen) {
                 weightMenuScreen.onWeightUpdated();
@@ -217,6 +261,10 @@ public class GunIdEditScreen extends Screen {
 
         graphics.drawString(this.font, "Weight:", centerX - 150, centerY - 46, 0xFFFFFF);
         graphics.drawString(this.font, "Custom ID:", centerX - 150, centerY - 12, 0xFFFFFF);
+
+        if (gunInfo.hasGunId()) {
+            graphics.drawString(this.font, "Ammo Weight/Round:", centerX - 150, centerY + 22, 0xFFFFFF);
+        }
 
         if (!idBox.getValue().trim().isEmpty()) {
             String status = hasIdError ? "✗ Invalid" : "✓ Valid";
@@ -276,5 +324,6 @@ public class GunIdEditScreen extends Screen {
         super.tick();
         if (weightBox != null) weightBox.tick();
         if (idBox != null) idBox.tick();
+        if (ammoWeightBox != null) ammoWeightBox.tick();
     }
 }

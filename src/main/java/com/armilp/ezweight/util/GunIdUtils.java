@@ -410,6 +410,15 @@ public class GunIdUtils {
         }
 
         double perRoundWeight = WeightConfig.COMMON.AMMO_WEIGHT_PER_ROUND.get();
+
+        Optional<ResourceLocation> gunIdOpt = getGunId(stack);
+        if (gunIdOpt.isPresent()) {
+            Double gunSpecificWeight = ItemWeightRegistry.getGunAmmoWeight(gunIdOpt.get());
+            if (gunSpecificWeight != null) {
+                perRoundWeight = gunSpecificWeight;
+            }
+        }
+
         if (selectedAmmoId != null) {
             Double cfg = resolveWeightForId(selectedAmmoId);
             if (cfg != null) perRoundWeight = cfg;
@@ -418,7 +427,7 @@ public class GunIdUtils {
             if (cfg != null) perRoundWeight = cfg;
         }
 
-        int rounds = estimateLoadedRounds(tag, getGunId(stack).orElse(null));
+        int rounds = estimateLoadedRounds(tag, gunIdOpt.orElse(null));
         double multiplier = WeightConfig.COMMON.AMMO_WEIGHT_MULTIPLIER.get();
         return Math.max(0.0, rounds * perRoundWeight * Math.max(0.0, multiplier));
     }
@@ -509,7 +518,6 @@ public class GunIdUtils {
                     if (key instanceof ResourceLocation rl) keys.add(rl);
                 }
             } else {
-                // Fallback: usar reflexión para métodos alternativos si existen
                 try {
                     Class<?> api = Class.forName("com.tacz.guns.api.TimelessAPI");
                     for (String name : new String[]{"getAllAmmoIndex"}) {
