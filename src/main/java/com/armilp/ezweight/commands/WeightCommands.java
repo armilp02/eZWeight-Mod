@@ -103,8 +103,7 @@ public class WeightCommands {
 
     public static boolean isWeightEnabledFor(ServerPlayer player) {
         if (!WeightConfig.COMMON.NO_JUMP_WEIGHT_ENABLED.get()
-                && !WeightConfig.COMMON.DAMAGE_OVERWEIGHT_ENABLED.get()
-                && !WeightConfig.COMMON.FORCE_SNEAK_ENABLED.get()) {
+                && !WeightConfig.COMMON.DAMAGE_OVERWEIGHT_ENABLED.get()) {
             return false;
         }
         if (allDisabled) return false;

@@ -45,5 +45,11 @@
   "gui.ezweight.cancel": "Cancelar",
   "gui.ezweight.reset": "Restablecer",
   "screen.ezweight.edit_multiple": "Editar pesos múltiples",
-  "button.ezweight.edit_selected": "Editar seleccionados [CLTR+CLICK]"
+  "button.ezweight.edit_selected": "Editar seleccionados [CLTR+CLICK]",
+  "Effects": "Effects",
+  "effect.ezweight.light_encumbered": "Levemente Cargado",
+  "effect.ezweight.encumbered": "Cargado",
+  "effect.ezweight.heavily_encumbered": "Muy Cargado",
+  "effect.ezweight.overburdened": "Sobrecargado",
+  "effect.ezweight.crushed": "Aplastado"
 }

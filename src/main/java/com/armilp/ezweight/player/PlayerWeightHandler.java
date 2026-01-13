@@ -89,21 +89,40 @@ public class PlayerWeightHandler {
     private static double getStackWeightWithContents(ItemStack stack) {
         double per = ItemWeightRegistry.getWeight(stack);
         double tot = per * stack.getCount();
-        double capWeight = stack.getCapability(ForgeCapabilities.ITEM_HANDLER)
-                .map(PlayerWeightHandler::getHandlerContentsWeight)
-                .orElse(0.0);
+
+        boolean isContainerItem = stack.hasTag() && stack.getTag().contains("BlockEntityTag");
+
+        double capWeight = 0.0;
+        if (!isContainerItem) {
+            capWeight = stack.getCapability(ForgeCapabilities.ITEM_HANDLER)
+                    .map(PlayerWeightHandler::getHandlerContentsWeight)
+                    .orElse(0.0);
+        }
         return tot + capWeight;
     }
+
 
     public static double extractWeightFromTag(CompoundTag tag) {
         if (tag == null) return 0.0;
         double sum = 0.0;
+
         for (String key : tag.getAllKeys()) {
             String lk = key.toLowerCase();
+
             if (lk.equals("items") || lk.contains("inv") || lk.equals("toolsinventory") || lk.equals("upgrades") || lk.equals("blockentitytag")) {
                 try {
                     if (lk.equals("blockentitytag")) {
                         CompoundTag be = tag.getCompound(key);
+                        if (be.contains("Items", 9)) {
+                            ListTag list = be.getList("Items", 10);
+                            for (int i = 0; i < list.size(); i++) {
+                                ItemStack inner = ItemStack.of(list.getCompound(i));
+                                if (!inner.isEmpty()) {
+                                    sum += getExtendedStackWeightWithContents(inner, null);
+                                }
+                            }
+                            continue;
+                        }
                         sum += extractWeightFromTag(be);
                         continue;
                     }

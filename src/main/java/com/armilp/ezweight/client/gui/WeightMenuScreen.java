@@ -68,8 +68,7 @@ public class WeightMenuScreen extends Screen {
             refreshItems();
         }).bounds(this.width - 260, 30, 100, 20).build();
         this.addRenderableWidget(refreshButton);
-
-        if ("tacz".equals(this.namespace)) {
+        if (!"all".equals(this.namespace)) {
             refreshItems();
         } else {
             updateList();

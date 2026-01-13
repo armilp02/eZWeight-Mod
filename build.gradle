@@ -1,23 +1,35 @@
-import net.darkhax.curseforgegradle.TaskPublishCurseForge;
+import net.darkhax.curseforgegradle.TaskPublishCurseForge
+buildscript {
+    repositories {
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+        gradlePluginPortal()
+        maven { url = 'https://maven.minecraftforge.net' }
+    }
+    dependencies {
+        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+    }
+}
 
 plugins {
     id 'eclipse'
     id 'idea'
-    id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'org.spongepowered.mixin' version '0.7.+'
     id "com.modrinth.minotaur" version "2.+"
     id 'net.darkhax.curseforgegradle' version '1.1.+'
-    id 'org.spongepowered.mixin' version '0.7.+'
 }
 
-def changelogText = rootProject.file('changelog.md').text
+apply plugin: 'org.spongepowered.mixin'
 
 group = mod_group_id
 version = mod_version
 
 base {
-    archivesName = mod_id
+    archivesName = "${mod_name}-${minecraft_version}-forge"
 }
+
+def changelogText = rootProject.file('changelog.md').text
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -33,8 +45,13 @@ minecraft {
             workingDirectory project.file('run')
 
             property 'forge.logging.markers', 'REGISTRIES'
-
             property 'forge.logging.console.level', 'debug'
+
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            property 'mixin.debug', 'true'
+            property 'mixin.debug.verbose', 'true'
+            property 'mixin.debug.export', 'true'
 
             mods {
                 "${mod_id}" {
@@ -42,23 +59,17 @@ minecraft {
                 }
             }
         }
-
         client {
-            property 'forge.enabledGameTestNamespaces', mod_id
+            jvmArgs '-Dmixin.debug=true'
         }
 
         server {
-            property 'forge.enabledGameTestNamespaces', mod_id
             args '--nogui'
-        }
-
-        gameTestServer {
-            property 'forge.enabledGameTestNamespaces', mod_id
+            jvmArgs '-Dmixin.debug=true'
         }
 
         data {
             workingDirectory project.file('run-data')
-
             args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
         }
     }
@@ -78,25 +89,56 @@ repositories {
         name = "Illusive Soulworks maven"
         url = "https://maven.theillusivec4.top/"
     }
+    maven {
+        name = 'GeckoLib'
+        url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content {
+            includeGroupByRegex("software\\.bernie.*")
+            includeGroup("com.eliotlash.mclib")
+        }
+    }
+    // Añadido para JEI (como en Curios)
+    maven {
+        name = "Jared's maven"
+        url = "https://maven.blamejared.com/"
+    }
+    maven {
+        name = "ModMaven"
+        url = "https://modmaven.dev"
+    }
 }
 
 dependencies {
 
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:6654541")
+    implementation fg.deobf("curse.maven:maxstuff-1199923:6624536")
+    implementation fg.deobf("curse.maven:tacz-endless-ammo-1166149:6623002")
+    implementation fg.deobf("curse.maven:supplementaries-412082:6889003")
+    implementation fg.deobf("curse.maven:selene-499980:6935940")
     implementation fg.deobf("curse.maven:sophisticated-backpacks-422301:6587116")
     implementation fg.deobf("curse.maven:sophisticated-core-618298:6596375")
     implementation fg.deobf("curse.maven:travelers-backpack-321117:6650344")
-    compileOnly "top.theillusivec4.curios:curios-forge:${curios_version}:api"
+
+    // CuriosAPI
+    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
+    runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
 }
 
-
 tasks.named('processResources', ProcessResources).configure {
-    var replaceProperties = [minecraft_version   : minecraft_version, minecraft_version_range: minecraft_version_range,
-                             forge_version       : forge_version, forge_version_range: forge_version_range,
-                             loader_version_range: loader_version_range,
-                             mod_id              : mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-                             mod_authors         : mod_authors, mod_description: mod_description,]
+    var replaceProperties = [
+            minecraft_version   : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            forge_version       : forge_version,
+            forge_version_range: forge_version_range,
+            loader_version_range: loader_version_range,
+            mod_id              : mod_id,
+            mod_name: mod_name,
+            mod_license: mod_license,
+            mod_version: mod_version,
+            mod_authors         : mod_authors,
+            mod_description: mod_description,
+    ]
 
     inputs.properties replaceProperties
 
@@ -108,13 +150,15 @@ tasks.named('processResources', ProcessResources).configure {
 
 tasks.named('jar', Jar).configure {
     manifest {
-        attributes(["Specification-Title"     : mod_id,
-                    "Specification-Vendor"    : mod_authors,
-                    "Specification-Version"   : mod_version,
-                    "Implementation-Title"    : project.name,
-                    "Implementation-Version"  : project.jar.archiveVersion,
-                    "Implementation-Vendor"   : mod_authors,
-                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")])
+        attributes([
+                "Specification-Title"     : mod_id,
+                "Specification-Vendor"    : mod_authors,
+                "Specification-Version"   : mod_version,
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.jar.archiveVersion,
+                "Implementation-Vendor"   : mod_authors,
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+        ])
     }
 
     finalizedBy 'reobfJar'
@@ -125,7 +169,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
 
     apiToken = System.getenv("CURSEFORGE_TOKEN")
 
-    def mainFile = upload('1288945', file("build/libs/${mod_id}-${mod_version}.jar"))
+    def mainFile = upload('1288945', file("build/libs/${mod_name}-${minecraft_version}-forge-${mod_version}.jar"))
     mainFile.displayName = "${mod_name}-${mod_version}"
     mainFile.releaseType = 'release'
     mainFile.changelog = changelogText
@@ -142,7 +186,7 @@ modrinth {
     versionName = "${mod_name} ${mod_version}"
     versionNumber = "${mod_version}"
     versionType = "release"
-    uploadFile = file("build/libs/${mod_id}-${mod_version}.jar")
+    uploadFile = file("build/libs/${mod_name}-${minecraft_version}-forge-${mod_version}.jar")
     gameVersions = ["${minecraft_version}"] as Iterable<? extends String>
     loaders = ["forge"]
     changelog = changelogText
@@ -156,25 +200,12 @@ modrinth {
     }
 }
 
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            artifact jar
-        }
-    }
-    repositories {
-        maven {
-            url "file://${project.projectDir}/mcmodsrepo"
-        }
-    }
-}
 
 tasks.register('publicModdedSite') {
     dependsOn 'build'
     dependsOn 'publishCurseForge'
     dependsOn 'modrinth'
 }
-
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'

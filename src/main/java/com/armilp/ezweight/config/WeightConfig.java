@@ -45,8 +45,6 @@ public class WeightConfig {
         public final ForgeConfigSpec.BooleanValue DAMAGE_OVERWEIGHT_ENABLED;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> DAMAGE_OVERWEIGHT_THRESHOLDS;
         public final ForgeConfigSpec.DoubleValue DAMAGE_PER_SECOND;
-        public final ForgeConfigSpec.BooleanValue FORCE_SNEAK_ENABLED;
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> FORCE_SNEAK_WEIGHT_RANGES;
 
         public final ForgeConfigSpec.BooleanValue ATTACHMENT_WEIGHT_ENABLED;
         public final ForgeConfigSpec.DoubleValue ATTACHMENT_WEIGHT_MULTIPLIER;
@@ -144,17 +142,7 @@ public class WeightConfig {
 
             DAMAGE_PER_SECOND = builder
                     .comment("Damage per second while overweight.")
-                    .defineInRange("damage_per_second", 1.4, 0.0, 100.0);
-            builder.pop();
-
-            builder.push("ForceSneak");
-            FORCE_SNEAK_ENABLED = builder
-                    .define("force_sneak_enabled", false);
-            FORCE_SNEAK_WEIGHT_RANGES = builder
-                    .comment("Ranges [min, max]; use 'max' for player max weight.")
-                    .defineList("force_sneak_weight_ranges",
-                            Arrays.asList("115", "max"),
-                            val -> isValidDoubleOrMax(val));
+                    .defineInRange("damage_per_second", 0.5, 0.0, 100.0);
             builder.pop();
 
             builder.push("TACZGunWeight");
@@ -199,29 +187,6 @@ public class WeightConfig {
         } catch (NumberFormatException e) {
             return 0.0;
         }
-    }
-
-    public static double parseWeightValue(String s, Player player) {
-        if (s.equalsIgnoreCase("max")) {
-            if (player != null) {
-                return DynamicMaxWeightCalculator.calculate(player);
-            }
-            return COMMON.MAX_WEIGHT.get();
-        }
-
-        try {
-            return Double.parseDouble(s);
-        } catch (NumberFormatException e) {
-            return 0.0;
-        }
-    }
-
-    public static double getProgressiveStartWeight() {
-        List<? extends String> ranges = COMMON.DAMAGE_OVERWEIGHT_THRESHOLDS.get();
-        if (!ranges.isEmpty()) {
-            return parseWeightValue(ranges.get(0));
-        }
-        return 0.0;
     }
 
 

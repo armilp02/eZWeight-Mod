@@ -44,5 +44,11 @@
   "gui.ezweight.cancel": "Cancel",
   "gui.ezweight.reset": "Reset",
   "screen.ezweight.edit_multiple": "Edit Multiple Weights",
-  "button.ezweight.edit_selected": "Edit Selected [CLTR+CLICK]"
+  "button.ezweight.edit_selected": "Edit Selected [CLTR+CLICK]",
+  "Effects": "Effects",
+  "effect.ezweight.light_encumbered": "Slight",
+  "effect.ezweight.encumbered": "Encumbered",
+  "effect.ezweight.heavily_encumbered": "Heavy",
+  "effect.ezweight.overburdened": "Overburdened",
+  "effect.ezweight.crushed": "Crushed"
 }
