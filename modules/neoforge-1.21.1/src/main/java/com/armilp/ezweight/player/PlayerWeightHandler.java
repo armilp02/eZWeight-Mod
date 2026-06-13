@@ -30,6 +30,14 @@ public class PlayerWeightHandler {
     private static final boolean CURIOS_LOADED = ModList.get().isLoaded(CuriosApi.MODID);
     private static final boolean BACKPACKED_LOADED = ModList.get().isLoaded("backpacked");
 
+    private static final boolean DEBUG_BACKPACKED_WEIGHT = true;
+
+    private static void debug(String message) {
+        if (DEBUG_BACKPACKED_WEIGHT) {
+            System.out.println("[eZWeight/BackpackedDebug] " + message);
+        }
+    }
+
     public static double getExtendedStackWeightWithContents(ItemStack stack, @Nullable Player player) {
         return getStackWeight(stack, player, Collections.newSetFromMap(new IdentityHashMap<>()));
     }
@@ -95,19 +103,19 @@ public class PlayerWeightHandler {
         }
 
         if (!(player instanceof com.mrcrayfish.backpacked.inventory.BackpackedInventoryAccess access)) {
-            System.out.println("Not BackpackedInventoryAccess");
+            debug("Not BackpackedInventoryAccess");
             return 0.0;
         }
 
         double total = 0.0;
         int max = com.mrcrayfish.backpacked.inventory.ManagementInventory.getMaxEquipable();
 
-        System.out.println("Max equipable: " + max);
+        debug("Max equipable: " + max);
 
         for (int i = 0; i < max; i++) {
             ItemStack backpack = BackpackHelper.getBackpackStack(player, i);
 
-            System.out.println("Slot " + i + ": " + (backpack.isEmpty()
+            debug("Slot " + i + ": " + (backpack.isEmpty()
                     ? "EMPTY"
                     : backpack.getItem().getName(backpack).getString()));
 
@@ -118,12 +126,12 @@ public class PlayerWeightHandler {
             double backpackWeight = ItemWeightRegistry.getWeight(backpack) * backpack.getCount();
             total += backpackWeight;
 
-            System.out.println("Backpack weight: " + backpackWeight);
+            debug("Backpack weight: " + backpackWeight);
 
             com.mrcrayfish.backpacked.inventory.BackpackInventory inventory =
                     access.backpacked$GetBackpackInventory(i);
 
-            System.out.println("Inventory for slot " + i + ": " + (inventory == null
+            debug("Inventory for slot " + i + ": " + (inventory == null
                     ? "NULL"
                     : "FOUND, size: " + inventory.getContainerSize()));
 
@@ -134,7 +142,7 @@ public class PlayerWeightHandler {
                     if (!inner.isEmpty()) {
                         double innerWeight = ItemWeightRegistry.getWeight(inner) * inner.getCount();
 
-                        System.out.println("  Slot " + slot + ": "
+                        debug("  Slot " + slot + ": "
                                 + inner.getItem().getName(inner).getString()
                                 + " x" + inner.getCount()
                                 + " weight: " + ItemWeightRegistry.getWeight(inner));
@@ -143,14 +151,14 @@ public class PlayerWeightHandler {
                     }
                 }
             } else {
-                System.out.println("Using extractWeightFromTag");
+                debug("Using extractWeightFromTag");
 
                 CompoundTag tag = saveStackToTag(backpack, serverPlayer.registryAccess());
                 total += extractWeightFromTag(tag, visited, serverPlayer.registryAccess());
             }
         }
 
-        System.out.println("Total backpacked weight: " + total);
+        debug("Total backpacked weight: " + total);
         return total;
     }
 
