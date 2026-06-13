@@ -16,8 +16,8 @@ base {
     archivesName = "${mod_name}-neoforge-${minecraft_version}"
 }
 
-def changelogText = rootProject.file('changelog.md').exists()
-        ? rootProject.file('changelog.md').text
+def changelogText = project.file('changelog.md').exists()
+        ? project.file('changelog.md').text
         : "No changelog available"
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -134,7 +134,6 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
     mainFile.addOptional("sophisticated-backpacks")
     mainFile.addOptional("travelers-backpack")
     mainFile.addOptional("curios")
-    mainFile.addOptional("timeless-and-classics-zero")
 }
 
 modrinth {
@@ -152,7 +151,6 @@ modrinth {
         optional.project 'sophisticated-backpacks'
         optional.project 'travelersbackpack'
         optional.project 'curios'
-        optional.project 'timeless-and-classics-zero'
     }
 }
 
