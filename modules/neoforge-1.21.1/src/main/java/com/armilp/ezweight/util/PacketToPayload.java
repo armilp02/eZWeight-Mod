@@ -1,5 +1,6 @@
-package com.armilp.ezweight.network;
+package com.armilp.ezweight.util;
 
+import com.armilp.ezweight.events.NeoForgeNetworkEvent;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -16,7 +17,7 @@ public record PacketToPayload<T>(
         CustomPacketPayload.Type<PacketToPayload<T>> type,
         BiConsumer<T, RegistryFriendlyByteBuf> encoder,
         Function<RegistryFriendlyByteBuf, T> decoder,
-        BiConsumer<T, Supplier<LegacyContext>> handler
+        BiConsumer<T, Supplier<NeoForgeNetworkEvent.Context>> handler
 ) implements CustomPacketPayload {
 
     @Override
@@ -25,7 +26,7 @@ public record PacketToPayload<T>(
     }
 
     public void handle(IPayloadContext context) {
-        handler.accept(data, LegacyContext.wrap(context));
+        handler.accept(data, NeoForgeNetworkEvent.Context.wrap(context));
     }
 
     public static <T> Registration<T> create(
@@ -33,7 +34,7 @@ public record PacketToPayload<T>(
             String modId,
             BiConsumer<T, RegistryFriendlyByteBuf> encoder,
             Function<RegistryFriendlyByteBuf, T> decoder,
-            BiConsumer<T, Supplier<LegacyContext>> handler
+            BiConsumer<T, Supplier<NeoForgeNetworkEvent.Context>> handler
     ) {
         Type<PacketToPayload<T>> type = new Type<>(ResourceLocation.fromNamespaceAndPath(modId, id));
 
@@ -50,7 +51,7 @@ public record PacketToPayload<T>(
             StreamCodec<RegistryFriendlyByteBuf, PacketToPayload<T>> codec,
             BiConsumer<T, RegistryFriendlyByteBuf> encoder,
             Function<RegistryFriendlyByteBuf, T> decoder,
-            BiConsumer<T, Supplier<LegacyContext>> handler
+            BiConsumer<T, Supplier<NeoForgeNetworkEvent.Context>> handler
     ) {
         public PacketToPayload<T> wrap(T data) {
             return new PacketToPayload<>(data, type, encoder, decoder, handler);
