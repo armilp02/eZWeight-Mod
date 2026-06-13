@@ -2,8 +2,8 @@ package com.armilp.ezweight.network.sync;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.data.ItemWeightRegistry;
-import com.armilp.ezweight.network.LegacyContext;
-import com.armilp.ezweight.network.PacketToPayload;
+import com.armilp.ezweight.events.NeoForgeNetworkEvent;
+import com.armilp.ezweight.util.PacketToPayload;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
@@ -27,7 +27,7 @@ public class SyncItemsWeightPacket {
         return new SyncItemsWeightPacket(buf.readResourceLocation(), buf.readDouble());
     }
 
-    public static void handle(SyncItemsWeightPacket packet, Supplier<LegacyContext> context) {
+    public static void handle(SyncItemsWeightPacket packet, Supplier<NeoForgeNetworkEvent.Context> context) {
         context.get().enqueueWork(() -> {
                 ItemWeightRegistry.setWeight(packet.itemId, packet.weight);  // Usamos setWeight para otros ítems
 

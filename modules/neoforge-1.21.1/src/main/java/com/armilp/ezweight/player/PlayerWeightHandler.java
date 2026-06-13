@@ -30,7 +30,7 @@ public class PlayerWeightHandler {
     private static final boolean CURIOS_LOADED = ModList.get().isLoaded(CuriosApi.MODID);
     private static final boolean BACKPACKED_LOADED = ModList.get().isLoaded("backpacked");
 
-    private static final boolean DEBUG_BACKPACKED_WEIGHT = true;
+    private static final boolean DEBUG_BACKPACKED_WEIGHT = false;
 
     private static void debug(String message) {
         if (DEBUG_BACKPACKED_WEIGHT) {

@@ -3,8 +3,8 @@ package com.armilp.ezweight.network.sync;
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.levels.WeightLevel;
 import com.armilp.ezweight.levels.WeightLevelManager;
-import com.armilp.ezweight.network.LegacyContext;
-import com.armilp.ezweight.network.PacketToPayload;
+import com.armilp.ezweight.events.NeoForgeNetworkEvent;
+import com.armilp.ezweight.util.PacketToPayload;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraft.network.FriendlyByteBuf;
@@ -29,7 +29,7 @@ public class WeightLevelsSyncPacket {
         return new WeightLevelsSyncPacket(buf.readUtf());
     }
 
-    public void handle(Supplier<LegacyContext> contextSupplier) {
+    public void handle(Supplier<NeoForgeNetworkEvent.Context> contextSupplier) {
         contextSupplier.get().enqueueWork(() -> {
             WeightLevelManager.loadFromJsonString(json);
         });

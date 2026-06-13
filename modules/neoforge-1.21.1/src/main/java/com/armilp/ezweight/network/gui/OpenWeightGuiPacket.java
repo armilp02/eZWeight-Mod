@@ -1,8 +1,8 @@
 package com.armilp.ezweight.network.gui;
 
 import com.armilp.ezweight.EZWeight;
-import com.armilp.ezweight.network.LegacyContext;
-import com.armilp.ezweight.network.PacketToPayload;
+import com.armilp.ezweight.events.NeoForgeNetworkEvent;
+import com.armilp.ezweight.util.PacketToPayload;
 import net.minecraft.network.FriendlyByteBuf;
 
 import java.util.function.Supplier;
@@ -19,7 +19,7 @@ public class OpenWeightGuiPacket {
         return new OpenWeightGuiPacket();
     }
 
-    public static void handle(OpenWeightGuiPacket msg, Supplier<LegacyContext> ctx) {
+    public static void handle(OpenWeightGuiPacket msg, Supplier<NeoForgeNetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(OpenWeightGuiHandler::handle);
         ctx.get().setPacketHandled(true);
     }

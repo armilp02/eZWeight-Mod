@@ -2,6 +2,7 @@ package com.armilp.ezweight.network;
 
 import com.armilp.ezweight.network.gui.OpenWeightGuiPacket;
 import com.armilp.ezweight.network.sync.*;
+import com.armilp.ezweight.util.PacketToPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;

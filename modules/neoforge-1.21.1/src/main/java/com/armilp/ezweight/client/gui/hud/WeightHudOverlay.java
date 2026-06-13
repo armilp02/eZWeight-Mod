@@ -52,6 +52,11 @@ public class WeightHudOverlay {
     private static int hudX, hudY, iconX, iconY;
     private static float alpha = 0f;
 
+    // Cache player weight to avoid recalculating every render frame (expensive traversal)
+    private static double cachedPlayerWeight = 0.0;
+    private static long lastWeightCalcMillis = 0L;
+    private static final long WEIGHT_RECALC_INTERVAL_MS = 200L; // recalc at most every 200ms
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRenderScreen(ScreenEvent.Render.Post event) {
         Minecraft mc = Minecraft.getInstance();
@@ -116,7 +121,13 @@ public class WeightHudOverlay {
     }
 
     private static void renderWeightHud(Minecraft mc, GuiGraphics graphics, CompoundTag data) {
-        double weight = PlayerWeightHandler.getTotalWeight(mc.player);
+        // Avoid computing the full inventory weight every single render frame — it's expensive.
+        long now = System.currentTimeMillis();
+        if (now - lastWeightCalcMillis > WEIGHT_RECALC_INTERVAL_MS) {
+            cachedPlayerWeight = PlayerWeightHandler.getTotalWeight(mc.player);
+            lastWeightCalcMillis = now;
+        }
+        double weight = cachedPlayerWeight;
         double maxWeight = WeightSyncData.getMaxWeight();
         int displayMode = data.getInt(NBT_KEY_DISPLAY_MODE);
 
@@ -273,7 +284,7 @@ public class WeightHudOverlay {
             case RIGHT -> {
                 hudX = inventoryLeft + inventoryWidth + offsetX;
                 hudY = inventoryTop + (inventoryHeight - RENDER_SIZE) / 2 + offsetY;
-                iconX = hudX + RENDER_SIZE + 5;
+                iconX = hudX + RENDER_SIZE + 35;
                 iconY = hudY;
             }
             default -> {

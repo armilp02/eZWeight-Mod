@@ -2,9 +2,9 @@ package com.armilp.ezweight.network.sync;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.data.ItemWeightRegistry;
+import com.armilp.ezweight.events.NeoForgeNetworkEvent;
 import com.armilp.ezweight.network.EZWeightNetwork;
-import com.armilp.ezweight.network.LegacyContext;
-import com.armilp.ezweight.network.PacketToPayload;
+import com.armilp.ezweight.util.PacketToPayload;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -31,7 +31,7 @@ public class AmmoWeightUpdatePacket {
         return new AmmoWeightUpdatePacket(buffer.readResourceLocation(), buffer.readDouble());
     }
 
-    public static void handle(AmmoWeightUpdatePacket packet, Supplier<LegacyContext> context) {
+    public static void handle(AmmoWeightUpdatePacket packet, Supplier<NeoForgeNetworkEvent.Context> context) {
         context.get().enqueueWork(() -> {
             ItemWeightRegistry.setGunAmmoWeight(packet.gunId, packet.ammoWeight);
             ItemWeightRegistry.saveToFile(ItemWeightRegistry.getConfigFile());

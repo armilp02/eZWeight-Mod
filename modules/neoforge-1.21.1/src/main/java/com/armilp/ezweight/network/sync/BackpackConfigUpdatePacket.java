@@ -2,8 +2,8 @@ package com.armilp.ezweight.network.sync;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.data.ItemWeightRegistry;
-import com.armilp.ezweight.network.LegacyContext;
-import com.armilp.ezweight.network.PacketToPayload;
+import com.armilp.ezweight.events.NeoForgeNetworkEvent;
+import com.armilp.ezweight.util.PacketToPayload;
 import com.armilp.ezweight.util.BackpackIdUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
@@ -57,7 +57,7 @@ public class BackpackConfigUpdatePacket {
     }
 
     public static void handle(BackpackConfigUpdatePacket pkt,
-                              Supplier<LegacyContext> ctx) {
+                              Supplier<NeoForgeNetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player == null) return;
