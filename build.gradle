@@ -9,8 +9,8 @@ plugins {
 subprojects {
     apply plugin: 'java'
 
-    java.withSourcesJar()
-    java.withJavadocJar()
+//    java.withSourcesJar()
+//    java.withJavadocJar()
 
     repositories {
         mavenCentral()

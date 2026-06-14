@@ -93,24 +93,13 @@ tasks.named('processResources', ProcessResources).configure {
             mod_version            : mod_version,
             mod_authors            : mod_authors,
             mod_description        : mod_description,
-            pack_version           : pack_version,
-            project                : project
+            pack_version           : pack_version
     ]
 
     inputs.properties replaceProperties
 
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    from(sourceSets.main.resources.srcDirs) {
-        include 'META-INF/neoforge.mods.toml'
-        include 'pack.mcmeta'
-
+    filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
         expand replaceProperties
-    }
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude 'META-INF/neoforge.mods.toml'
-        exclude 'pack.mcmeta'
     }
 }
 

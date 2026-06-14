@@ -114,36 +114,20 @@ dependencies {
 }
 
 tasks.named('processResources', ProcessResources).configure {
-    def replaceProperties = [
-            minecraft_version      : minecraft_version,
-            minecraft_version_range: mc_version_range,
-            forge_version          : forge_version,
-            forge_version_range    : forge_version_range,
-            loader_version_range   : loader_version_range,
-            mod_id                 : mod_id,
-            mod_name               : mod_name,
-            mod_license            : mod_license,
-            mod_version            : mod_version,
-            mod_authors            : mod_authors,
-            mod_description        : mod_description,
-            pack_version           : 15,
-            project                : project
+    var replaceProperties = [
+            minecraft_version: minecraft_version, minecraft_version_range: mc_version_range,
+            forge_version: forge_version, forge_version_range: forge_version_range,
+            loader_version_range: loader_version_range,
+            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
+            mod_authors: mod_authors, mod_description: mod_description,
+            pack_version: 15
     ]
-
     inputs.properties replaceProperties
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    from(sourceSets.main.resources.srcDirs) {
-        include 'META-INF/mods.toml'
-        include 'pack.mcmeta'
-
-        expand replaceProperties
-    }
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude 'META-INF/mods.toml'
-        exclude 'pack.mcmeta'
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
     }
 }
 
