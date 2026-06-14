@@ -31,7 +31,7 @@ sourceSets.main.resources {
 repositories {
     maven {
         name = "Curse Maven"
-        url = "https://cursemaven.skynetcloud.ca/"
+        url = "https://www.cursemaven.com/"
         content {
             includeGroup "curse.maven"
         }
