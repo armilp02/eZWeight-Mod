@@ -46,7 +46,11 @@ public class WeightDamage {
         }
 
         CompoundTag data = player.getPersistentData();
-        int ticksOverweight = data.getInt(TICK_COUNTER_TAG) + 1;
+        CompoundTag ezwData = data.contains("ezweight")
+                ? data.getCompound("ezweight")
+                : new CompoundTag();
+
+        int ticksOverweight = ezwData.getInt(TICK_COUNTER_TAG) + 1;
 
         if (ticksOverweight >= TICKS_PER_DAMAGE) {
             ticksOverweight = 0;
@@ -61,11 +65,16 @@ public class WeightDamage {
             }
         }
 
-        data.putInt(TICK_COUNTER_TAG, ticksOverweight);
+        ezwData.putInt(TICK_COUNTER_TAG, ticksOverweight);
+        data.put("ezweight", ezwData);
     }
 
     private static void resetTickCounter(Player player) {
-        player.getPersistentData().putInt(TICK_COUNTER_TAG, 0);
+        CompoundTag data = player.getPersistentData();
+        CompoundTag ezwData = data.getCompound("ezweight");
+
+        ezwData.putInt(TICK_COUNTER_TAG, 0);
+        data.put("ezweight", ezwData);
     }
 
     private static boolean isOverThreshold(double overweightRatio) {
@@ -84,7 +93,9 @@ public class WeightDamage {
         if (!WeightConfig.COMMON.DAMAGE_OVERWEIGHT_ENABLED.get()) {
             return 0.0f;
         }
-
-        return WeightConfig.COMMON.DAMAGE_PER_SECOND.get().floatValue();
+        float configured = WeightConfig.COMMON.DAMAGE_PER_SECOND.get().floatValue();
+        if (configured <= 0.0f) return 0.0f;
+        // vanilla ignores damage below 1.0, so enforce a minimum
+        return Math.max(configured, 1.0f);
     }
 }
