@@ -36,5 +36,16 @@ include "modules:forge:1.20.1"
 //include "modules:1.21.11"
 
 //NEOFORGE
+//include "modules:neoforge:1.20.1"
 include "modules:neoforge:1.21.1"
+//include "modules:neoforge:1.21.3"
+//include "modules:neoforge:1.21.4"
+//include "modules:neoforge:1.21.5"
+//include "modules:neoforge:1.21.6"
+//include "modules:neoforge:1.21.7"
+//include "modules:neoforge:1.21.8"
+//include "modules:neoforge:1.21.9"
+//include "modules:neoforge:1.21.10"
+//include "modules:neoforge:1.21.11"
+
 

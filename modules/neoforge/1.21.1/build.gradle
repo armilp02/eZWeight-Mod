@@ -123,7 +123,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
     apiToken = System.getenv("CURSEFORGE_TOKEN")
 
     def mainFile = upload('1288945', file("build/libs/${mod_name}-neoforge-${minecraft_version}-${mod_version}.jar"))
-    mainFile.displayName = "${mod_name}-${mod_version}"
+    mainFile.displayName = "${mod_name}-${mod_version}-${minecraft_version}-neforge"
     mainFile.releaseType = 'release'
     mainFile.changelog = changelogText
     mainFile.addGameVersion("${minecraft_version}")
@@ -139,7 +139,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
 modrinth {
     token = System.getenv("MODRINTH_TOKEN")
     projectId = "ezweight"
-    versionName = "${mod_name}-${mod_version}-${minecraft_version}"
+    versionName = "${mod_name}-${mod_version}-${minecraft_version}-neoforge"
     versionNumber = "${mod_name}-${mod_version}-${minecraft_version}"
     versionType = "release"
     uploadFile = file("build/libs/${mod_name}-neoforge-${minecraft_version}-${mod_version}.jar")
