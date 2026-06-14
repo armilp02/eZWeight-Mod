@@ -362,7 +362,7 @@
     "minecraft:crimson_hyphae": 0.04,
     "minecraft:acacia_fence": 0.04,
     "minecraft:chainmail_boots": 3.3,
-    "minecraft:bedrock": 0.04,
+    "minecraft:bedrock": 1000000.0,
     "minecraft:poisonous_potato": 0.04,
     "minecraft:oak_slab": 0.04,
     "minecraft:cyan_banner": 0.08,

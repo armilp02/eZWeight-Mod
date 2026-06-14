@@ -2,6 +2,7 @@ package com.armilp.ezweight.data;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.client.gui.ItemStackWithWeight;
+import com.armilp.ezweight.config.WeightConfig;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -220,6 +221,8 @@ public class ItemWeightRegistry {
         else if (itemName.contains("diamond")) baseWeight *= 2.5;
         else if (itemName.contains("netherite")) baseWeight *= 3.0;
 
+
+
         int stackSize = item.getDefaultMaxStackSize();
         if (stackSize > 1) baseWeight /= Math.sqrt(stackSize);
 
@@ -262,6 +265,12 @@ public class ItemWeightRegistry {
 
     public static double getWeight(ItemStack stack) {
         ResourceLocation effectiveId = getEffectiveId(stack);
+
+        if (effectiveId != null && effectiveId.toString().equals("minecraft:bedrock")) {
+            return WeightConfig.COMMON.MAX_WEIGHT.get() - 1;
+        }
+
+
         return ITEM_WEIGHTS.getOrDefault(effectiveId, 1.0);
     }
 
