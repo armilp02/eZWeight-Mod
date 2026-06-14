@@ -81,7 +81,7 @@ dependencies {
 }
 
 tasks.named('processResources', ProcessResources).configure {
-    var replaceProperties = [
+    def replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
             neoforge_version       : neoforge_version,
@@ -93,13 +93,24 @@ tasks.named('processResources', ProcessResources).configure {
             mod_version            : mod_version,
             mod_authors            : mod_authors,
             mod_description        : mod_description,
-            pack_version           : pack_version
+            pack_version           : pack_version,
+            project                : project
     ]
 
     inputs.properties replaceProperties
 
-    filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
-        expand replaceProperties + [project: project]
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'META-INF/neoforge.mods.toml'
+        include 'pack.mcmeta'
+
+        expand replaceProperties
+    }
+
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'META-INF/neoforge.mods.toml'
+        exclude 'pack.mcmeta'
     }
 }
 
