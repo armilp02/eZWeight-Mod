@@ -5,6 +5,6 @@
 - 
 - 🔃 Update: Weight system is a player attribute now so changing it will need be done via /attribute command (if you have a bug report it in discord or github)
 
-- Added: Added data folder for pufferfish skills if it installed
+- Added:  Data folder for pufferfish skills if it installed
 
 ### Support for issues and suggestions: [Discord](https://discord.gg/5UaxV2rtqz)
