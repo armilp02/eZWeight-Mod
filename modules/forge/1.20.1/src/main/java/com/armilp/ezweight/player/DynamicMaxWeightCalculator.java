@@ -1,6 +1,7 @@
 package com.armilp.ezweight.player;
 
 import com.armilp.ezweight.config.WeightConfig;
+import com.armilp.ezweight.registry.ModAttributes;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
@@ -9,8 +10,11 @@ import net.minecraft.world.item.ItemStack;
 public class DynamicMaxWeightCalculator {
 
     public static double calculate(Player player) {
-        if (PlayerMaxWeightOverride.has(player.getUUID())) {
-            return PlayerMaxWeightOverride.get(player.getUUID());
+
+        var attribute = player.getAttribute(ModAttributes.WEIGHT.get());
+
+        if (attribute != null && attribute.getBaseValue() > 0) {
+            return attribute.getValue();
         }
 
         if (!WeightConfig.COMMON.USE_DYNAMIC_WEIGHT.get()) {
@@ -52,7 +56,12 @@ public class DynamicMaxWeightCalculator {
         }
 
         double dynamicWeight = weightFromFood + strengthBonus + crouchBonus - armorWeightPenalty;
+        double finalWeight = Math.max(baseWeight, Math.min(dynamicWeight, baseMaxWeight));
 
-        return Math.max(baseWeight, Math.min(dynamicWeight, baseMaxWeight));
+        if (attribute != null) {
+            attribute.setBaseValue(finalWeight);
+        }
+
+        return finalWeight;
     }
 }

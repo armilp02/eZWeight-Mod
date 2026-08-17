@@ -114,29 +114,29 @@ public class WeightCommands {
                                         )
                                 )
                         )
-                        .then(Commands.literal("resetmaxweight")
-                                .then(Commands.argument("player", StringArgumentType.word())
-                                        .executes(context -> {
-                                            CommandSourceStack src = context.getSource();
-                                            String playerName = StringArgumentType.getString(context, "player");
-                                            ServerPlayer target = src.getServer().getPlayerList().getPlayerByName(playerName);
-
-                                            if (target == null) {
-                                                src.sendFailure(Component.translatable("message.ezweight.player_not_found", playerName));
-                                                return 0;
-                                            }
-
-                                            PlayerMaxWeightOverride.clear(target.getUUID());
-
-                                            src.sendSuccess(() -> Component.translatable(
-                                                    "message.ezweight.resetmaxweight_success",
-                                                    playerName
-                                            ), true);
-
-                                            return Command.SINGLE_SUCCESS;
-                                        })
-                                )
-                        )
+//                        .then(Commands.literal("resetmaxweight")
+//                                .then(Commands.argument("player", StringArgumentType.word())
+//                                        .executes(context -> {
+//                                            CommandSourceStack src = context.getSource();
+//                                            String playerName = StringArgumentType.getString(context, "player");
+//                                            ServerPlayer target = src.getServer().getPlayerList().getPlayerByName(playerName);
+//
+//                                            if (target == null) {
+//                                                src.sendFailure(Component.translatable("message.ezweight.player_not_found", playerName));
+//                                                return 0;
+//                                            }
+//
+//                                            PlayerMaxWeightOverride.clear(target.getUUID());
+//
+//                                            src.sendSuccess(() -> Component.translatable(
+//                                                    "message.ezweight.resetmaxweight_success",
+//                                                    playerName
+//                                            ), true);
+//
+//                                            return Command.SINGLE_SUCCESS;
+//                                        })
+//                                )
+//                        )
                         .then(Commands.literal("toggle")
                                 .then(Commands.argument("player", StringArgumentType.word())
                                         .executes(context -> {

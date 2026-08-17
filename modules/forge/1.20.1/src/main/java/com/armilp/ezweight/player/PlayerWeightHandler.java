@@ -2,6 +2,7 @@ package com.armilp.ezweight.player;
 
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.data.ItemWeightRegistry;
+import com.armilp.ezweight.registry.ModAttributes;
 import com.armilp.ezweight.util.BackpackIdUtils;
 import com.armilp.ezweight.util.DebugLog;
 import com.mrcrayfish.backpacked.BackpackHelper;
@@ -87,6 +88,14 @@ public class PlayerWeightHandler {
 
             return total;
         }).orElse(0.0);
+    }
+
+    public static double getMaxWeight(Player player) {
+        var attribute = player.getAttribute(ModAttributes.WEIGHT.get());
+        if (attribute != null) {
+            return attribute.getValue();
+        }
+        return WeightConfig.COMMON.MAX_WEIGHT.get();
     }
 
     private static double getBackpackedWeight(Player player, Set<Object> visited) {
