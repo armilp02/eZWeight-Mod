@@ -618,6 +618,25 @@ public class ItemWeightRegistry {
         return GUN_AMMO_WEIGHTS.get(gunId);
     }
 
+    public static Map<ResourceLocation, Double> getAllGunAmmoWeights() {
+        return Collections.unmodifiableMap(GUN_AMMO_WEIGHTS);
+    }
+
+    public static void applyServerSync(Map<ResourceLocation, Double> items, Map<ResourceLocation, Double> ammoWeights, Map<ResourceLocation, Double> backpackReductions, Map<ResourceLocation, Double> backpackMaxWeights) {
+        ITEM_WEIGHTS.clear();
+        ITEM_WEIGHTS.putAll(items);
+
+        GUN_AMMO_WEIGHTS.clear();
+        GUN_AMMO_WEIGHTS.putAll(ammoWeights);
+
+        BACKPACK_WEIGHT_REDUCTIONS.clear();
+        BACKPACK_WEIGHT_REDUCTIONS.putAll(backpackReductions);
+
+        BACKPACK_MAX_WEIGHTS.clear();
+        BACKPACK_MAX_WEIGHTS.putAll(backpackMaxWeights);
+    }
+
+
     public static void setGunAmmoWeight(ResourceLocation gunId, double ammoWeight) {
         GUN_AMMO_WEIGHTS.put(gunId, ammoWeight);
         EZWeight.LOGGER.info("Gun ammo weight set: {} = {}", gunId, ammoWeight);

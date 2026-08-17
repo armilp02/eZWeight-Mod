@@ -4,9 +4,12 @@ import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.data.ItemWeightRegistry;
 import com.armilp.ezweight.levels.WeightLevelManager;
 import com.armilp.ezweight.network.EZWeightNetwork;
+import com.armilp.ezweight.network.sync.FullWeightSyncPacket;
 import com.armilp.ezweight.registry.ModEffects;
 import com.mojang.logging.LogUtils;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -48,10 +51,18 @@ public class EZWeight {
         });
     }
 
+
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("EZWeight mod loaded on {}", FMLEnvironment.dist);
 
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            EZWeightNetwork.sendToPlayer(FullWeightSyncPacket.fromRegistry(), serverPlayer);
+        }
     }
 
 }

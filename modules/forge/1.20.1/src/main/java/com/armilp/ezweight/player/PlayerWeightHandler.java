@@ -3,6 +3,7 @@ package com.armilp.ezweight.player;
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.data.ItemWeightRegistry;
 import com.armilp.ezweight.util.BackpackIdUtils;
+import com.armilp.ezweight.util.DebugLog;
 import com.mrcrayfish.backpacked.BackpackHelper;
 import com.tiviacz.travelersbackpack.inventory.BackpackWrapper;
 import com.tiviacz.travelersbackpack.items.TravelersBackpackItem;
@@ -94,44 +95,45 @@ public class PlayerWeightHandler {
         }
 
         if (!(player instanceof com.mrcrayfish.backpacked.inventory.BackpackedInventoryAccess access)) {
-            System.out.println("Not BackpackedInventoryAccess");
+            DebugLog.log("Not BackpackedInventoryAccess");
             return 0.0;
         }
 
         double total = 0.0;
         int max = com.mrcrayfish.backpacked.inventory.ManagementInventory.getMaxEquipable();
-        System.out.println("Max equipable: " + max);
+        DebugLog.log("Max equipable: %d", max);
 
         for (int i = 0; i < max; i++) {
             ItemStack backpack = BackpackHelper.getBackpackStack(player, i);
-            System.out.println("Slot " + i + ": " + (backpack.isEmpty() ? "EMPTY" : backpack.getItem().getName(backpack).getString()));
+            DebugLog.log("Slot %d: %s", i, backpack.isEmpty() ? "EMPTY" : backpack.getItem().getName(backpack).getString());
 
             if (backpack.isEmpty()) {
                 continue;
             }
 
-            total += ItemWeightRegistry.getWeight(backpack) * backpack.getCount();
-            System.out.println("Backpack weight: " + (ItemWeightRegistry.getWeight(backpack) * backpack.getCount()));
+            double backpackWeight = ItemWeightRegistry.getWeight(backpack) * backpack.getCount();
+            total += backpackWeight;
+            DebugLog.log("Backpack weight: %s", backpackWeight);
 
             com.mrcrayfish.backpacked.inventory.BackpackInventory inventory = access.backpacked$GetBackpackInventory(i);
-            System.out.println("Inventory for slot " + i + ": " + (inventory == null ? "NULL" : "FOUND, size: " + inventory.getContainerSize()));
+            DebugLog.log("Inventory for slot %d: %s", i, inventory == null ? "NULL" : "FOUND, size: " + inventory.getContainerSize());
 
             if (inventory != null) {
                 for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
                     ItemStack inner = inventory.getItem(slot);
 
                     if (!inner.isEmpty()) {
-                        System.out.println("  Slot " + slot + ": " + inner.getItem().getName(inner).getString() + " x" + inner.getCount() + " weight: " + ItemWeightRegistry.getWeight(inner));
+                        DebugLog.log("  Slot %d: %s x%d weight: %s", slot, inner.getItem().getName(inner).getString(), inner.getCount(), ItemWeightRegistry.getWeight(inner));
                         total += ItemWeightRegistry.getWeight(inner) * inner.getCount();
                     }
                 }
             } else {
-                System.out.println("Using extractWeightFromTag");
+                DebugLog.log("Using extractWeightFromTag");
                 total += extractWeightFromTag(backpack.getTag(), visited);
             }
         }
 
-        System.out.println("Total backpacked weight: " + total);
+        DebugLog.log("Total backpacked weight: %s", total);
         return total;
     }
 

@@ -96,15 +96,15 @@ repositories {
 dependencies {
 
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:7401617")
+    implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:8141310")
     implementation fg.deobf("curse.maven:maxstuff-1199923:6624536")
     implementation fg.deobf("curse.maven:tacz-endless-ammo-1166149:6623002")
     implementation fg.deobf("curse.maven:supplementaries-412082:6889003")
     implementation fg.deobf("curse.maven:selene-499980:6935940")
-    implementation fg.deobf("curse.maven:sophisticated-backpacks-422301:6587116")
-    implementation fg.deobf("curse.maven:sophisticated-core-618298:6596375")
+    implementation fg.deobf("curse.maven:sophisticated-backpacks-422301:8656555")
+    implementation fg.deobf("curse.maven:sophisticated-core-618298:8656526")
     implementation fg.deobf("curse.maven:travelers-backpack-321117:6650344")
-    implementation fg.deobf("curse.maven:tacz-durability-1065328:7597163")
+    implementation fg.deobf("curse.maven:tacz-durability-1065328:8620590")
     implementation fg.deobf("curse.maven:modular-backpacks-1528260:8080284")
     implementation fg.deobf("curse.maven:backpacked-352835:7866682")
     implementation fg.deobf("curse.maven:framework-549225:7573740")

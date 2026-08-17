@@ -83,8 +83,16 @@ public class EZWeightNetwork {
                 BackpackConfigUpdatePacket::decode,
                 BackpackConfigUpdatePacket::handle
         );
-    }
 
+        CHANNEL.registerMessage(id++,
+                FullWeightSyncPacket.class,
+                FullWeightSyncPacket::encode,
+                FullWeightSyncPacket::decode,
+                FullWeightSyncPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+    }
 
     public static void sendToPlayer(Object message, ServerPlayer player) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), message);
