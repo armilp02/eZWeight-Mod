@@ -1,0 +1,13 @@
+{
+	"normal": {
+		"bidirectional": [
+			["weight_capacity_10", "weight_capacity_25"],
+			["weight_capacity_25", "weight_capacity_50"],
+			["weight_capacity_25", "weight_percentage_20"],
+			["weight_capacity_50", "weight_capacity_100"],
+			["weight_capacity_100", "weight_capacity_200"],
+			["weight_capacity_100", "weight_percentage_50"],
+			["weight_percentage_20", "weight_percentage_50"]
+		]
+	}
+}

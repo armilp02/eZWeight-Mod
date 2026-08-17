@@ -1,0 +1,199 @@
+{
+	"health+2": {
+		"title": "+1 Heart",
+		"icon": {
+			"type": "effect",
+			"data": {
+				"effect": "health_boost"
+			}
+		},
+		"rewards": [
+			{
+				"type": "puffish_skills:attribute",
+				"data": {
+					"attribute": "generic.max_health",
+					"value": 2,
+					"operation": "addition"
+				}
+			}
+		]
+	},
+	"attack_speed+5%": {
+		"title": "+5% Attack Speed",
+		"icon": {
+			"type": "item",
+			"data": {
+				"item": "golden_sword"
+			}
+		},
+		"rewards": [
+			{
+				"type": "puffish_skills:attribute",
+				"data": {
+					"attribute": "generic.attack_speed",
+					"value": 0.05,
+					"operation": "multiply_total"
+				}
+			}
+		]
+	},
+	"movement_speed+5%": {
+		"title": "+5% Movement Speed",
+		"icon": {
+			"type": "effect",
+			"data": {
+				"effect": "speed"
+			}
+		},
+		"rewards": [
+			{
+				"type": "puffish_skills:attribute",
+				"data": {
+					"attribute": "generic.movement_speed",
+					"value": 0.05,
+					"operation": "multiply_total"
+				}
+			}
+		]
+	},
+	"weight_capacity_10": {
+		"title": "Light Load Training",
+		"description": "Increase your weight capacity by 10kg",
+		"icon": {
+			"type": "item",
+			"data": {
+				"item": "leather_chestplate"
+			}
+		},
+		"rewards": [
+			{
+				"type": "puffish_skills:attribute",
+				"data": {
+					"attribute": "ezweight:weight",
+					"value": 10,
+					"operation": "addition"
+				}
+			}
+		]
+	},
+	"weight_capacity_25": {
+		"title": "Weight Training I",
+		"description": "Increase your weight capacity by 25kg",
+		"icon": {
+			"type": "item",
+			"data": {
+				"item": "chainmail_chestplate"
+			}
+		},
+		"rewards": [
+			{
+				"type": "puffish_skills:attribute",
+				"data": {
+					"attribute": "ezweight:weight",
+					"value": 25,
+					"operation": "addition"
+				}
+			}
+		]
+	},
+	"weight_capacity_50": {
+		"title": "Weight Training II",
+		"description": "Increase your weight capacity by 50kg",
+		"icon": {
+			"type": "item",
+			"data": {
+				"item": "iron_chestplate"
+			}
+		},
+		"rewards": [
+			{
+				"type": "puffish_skills:attribute",
+				"data": {
+					"attribute": "ezweight:weight",
+					"value": 50,
+					"operation": "addition"
+				}
+			}
+		]
+	},
+	"weight_capacity_100": {
+		"title": "Heavy Load Mastery",
+		"description": "Increase your weight capacity by 100kg",
+		"icon": {
+			"type": "item",
+			"data": {
+				"item": "diamond_chestplate"
+			}
+		},
+		"rewards": [
+			{
+				"type": "puffish_skills:attribute",
+				"data": {
+					"attribute": "ezweight:weight",
+					"value": 100,
+					"operation": "addition"
+				}
+			}
+		]
+	},
+	"weight_capacity_200": {
+		"title": "Titan's Strength",
+		"description": "Increase your weight capacity by 200kg",
+		"icon": {
+			"type": "item",
+			"data": {
+				"item": "netherite_chestplate"
+			}
+		},
+		"rewards": [
+			{
+				"type": "puffish_skills:attribute",
+				"data": {
+					"attribute": "ezweight:weight",
+					"value": 200,
+					"operation": "addition"
+				}
+			}
+		]
+	},
+	"weight_percentage_20": {
+		"title": "Efficient Carrying",
+		"description": "Increase your weight capacity by 20%",
+		"icon": {
+			"type": "effect",
+			"data": {
+				"effect": "strength"
+			}
+		},
+		"rewards": [
+			{
+				"type": "puffish_skills:attribute",
+				"data": {
+					"attribute": "ezweight:weight",
+					"value": 0.2,
+					"operation": "multiply_total"
+				}
+			}
+		]
+	},
+	"weight_percentage_50": {
+		"title": "Expert Carrier",
+		"description": "Increase your weight capacity by 50%",
+		"icon": {
+			"type": "effect",
+			"data": {
+				"effect": "strength"
+			}
+		},
+		"rewards": [
+			{
+				"type": "puffish_skills:attribute",
+				"data": {
+					"attribute": "ezweight:weight",
+					"value": 0.5,
+					"operation": "multiply_total"
+				}
+			}
+		]
+	}
+}

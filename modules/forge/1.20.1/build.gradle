@@ -105,6 +105,7 @@ dependencies {
     implementation fg.deobf("curse.maven:sophisticated-core-618298:8656526")
     implementation fg.deobf("curse.maven:travelers-backpack-321117:6650344")
     implementation fg.deobf("curse.maven:tacz-durability-1065328:8620590")
+    implementation fg.deobf("curse.maven:puffish-skills-835091:8547668")
     implementation fg.deobf("curse.maven:modular-backpacks-1528260:8080284")
     implementation fg.deobf("curse.maven:backpacked-352835:7866682")
     implementation fg.deobf("curse.maven:framework-549225:7573740")
