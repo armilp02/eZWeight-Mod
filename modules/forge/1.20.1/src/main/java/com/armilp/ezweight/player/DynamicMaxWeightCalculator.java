@@ -1,5 +1,6 @@
 package com.armilp.ezweight.player;
 
+import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.registry.ModAttributes;
 import net.minecraft.world.effect.MobEffects;
@@ -10,11 +11,19 @@ import net.minecraft.world.item.ItemStack;
 public class DynamicMaxWeightCalculator {
 
     public static double calculate(Player player) {
+        if (player == null) {
+            return WeightConfig.COMMON.MAX_WEIGHT.get();
+        }
 
-        var attribute = player.getAttribute(ModAttributes.WEIGHT.get());
+        try {
+            var attribute = player.getAttribute(ModAttributes.WEIGHT.get());
 
-        if (attribute != null && attribute.getBaseValue() > 0) {
-            return attribute.getValue();
+            // If attribute exists and has a base value, use it
+            if (attribute != null && attribute.getBaseValue() > 0) {
+                return attribute.getValue();
+            }
+        } catch (Exception e) {
+            EZWeight.LOGGER.debug("Weight attribute not yet available, using config values");
         }
 
         if (!WeightConfig.COMMON.USE_DYNAMIC_WEIGHT.get()) {
@@ -58,8 +67,14 @@ public class DynamicMaxWeightCalculator {
         double dynamicWeight = weightFromFood + strengthBonus + crouchBonus - armorWeightPenalty;
         double finalWeight = Math.max(baseWeight, Math.min(dynamicWeight, baseMaxWeight));
 
-        if (attribute != null) {
-            attribute.setBaseValue(finalWeight);
+        // Update the attribute if available
+        try {
+            var attribute = player.getAttribute(ModAttributes.WEIGHT.get());
+            if (attribute != null) {
+                attribute.setBaseValue(finalWeight);
+            }
+        } catch (Exception e) {
+            // Attribute not yet available, skip update
         }
 
         return finalWeight;

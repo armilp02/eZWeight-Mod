@@ -1,17 +1,17 @@
-// PlayerMaxWeightOverride.java - UPDATED
 package com.armilp.ezweight.player;
 
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.registry.ModAttributes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class PlayerMaxWeightOverride {
-    
+
     private static final Map<UUID, Double> legacyOverrides = new HashMap<>();
 
     public static void set(Player player, double maxWeight) {
@@ -19,7 +19,6 @@ public class PlayerMaxWeightOverride {
         if (attribute != null) {
             attribute.setBaseValue(maxWeight);
         }
-        // Remove from legacy map if exists
         legacyOverrides.remove(player.getUUID());
     }
 
@@ -28,7 +27,6 @@ public class PlayerMaxWeightOverride {
         if (player != null) {
             set(player, maxWeight);
         } else {
-            // Store in legacy map for when player is online
             legacyOverrides.put(uuid, maxWeight);
         }
     }
@@ -64,10 +62,12 @@ public class PlayerMaxWeightOverride {
         return legacyOverrides.getOrDefault(uuid, -1.0);
     }
 
-    // Helper to get player from UUID
+    // FIXED: Get player from server
     private static Player getPlayer(UUID uuid) {
-        // Implement based on your mod's structure
-        // You might want to store a reference to the server
-        return null; // Replace with actual implementation
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
+            return server.getPlayerList().getPlayer(uuid);
+        }
+        return null;
     }
 }

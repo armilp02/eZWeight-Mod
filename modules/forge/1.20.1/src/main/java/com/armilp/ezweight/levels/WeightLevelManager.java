@@ -2,11 +2,13 @@ package com.armilp.ezweight.levels;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.config.WeightConfig;
+import com.armilp.ezweight.player.PlayerWeightHandler;
 import com.google.gson.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.player.Player;
 
 import java.io.File;
 import java.io.FileReader;
@@ -143,6 +145,35 @@ public class WeightLevelManager {
                 .filter(level -> level.isInRange(weight))
                 .findFirst()
                 .orElse(null);
+    }
+
+    // NEW: Get level based on player's weight percentage
+    public static WeightLevel getLevelForPlayer(Player player) {
+        if (player == null || LEVELS.isEmpty()) {
+            return null;
+        }
+
+        double currentWeight = PlayerWeightHandler.getTotalWeight(player);
+        double maxWeight = PlayerWeightHandler.getMaxWeight(player);
+
+        if (maxWeight <= 0) {
+            return null;
+        }
+
+        // Calculate percentage of max weight
+        double percentage = currentWeight / maxWeight;
+
+        // Map percentage to the level ranges
+        // The levels are defined with absolute weights, but we treat them as percentages
+        double maxLevelWeight = getMaxLevelWeight();
+        double mappedWeight = percentage * maxLevelWeight;
+
+        return getLevelForWeight(mappedWeight);
+    }
+
+    private static double getMaxLevelWeight() {
+        if (LEVELS.isEmpty()) return 100.0;
+        return LEVELS.get(LEVELS.size() - 1).maxWeight();
     }
 
     public static List<WeightLevel> getLevels() {
