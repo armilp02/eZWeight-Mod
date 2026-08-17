@@ -63,5 +63,6 @@
   "effect.ezweight.crushed": "Crushed",
   "Keys": "Keys",
   "key.categories.ezweight": "eZWeight",
-  "key.ezweight.open_config": "Open HUD Config"
+  "key.ezweight.open_config": "Open HUD Config",
+  "attribute.ezweight.weight": "Weight"
 }

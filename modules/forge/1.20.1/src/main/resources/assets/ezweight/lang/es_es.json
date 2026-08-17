@@ -63,5 +63,6 @@
   "effect.ezweight.crushed": "Aplastado",
   "Keys": "Teclas",
   "key.categories.ezweight": "eZWeight",
-  "key.ezweight.open_config": "Abrir configuración del HUD"
+  "key.ezweight.open_config": "Abrir configuración del HUD",
+  "attribute.ezweight.weight": "Peso"
 }
