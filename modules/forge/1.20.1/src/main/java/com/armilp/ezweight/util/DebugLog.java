@@ -2,7 +2,7 @@ package com.armilp.ezweight.util;
 
 public final class DebugLog {
 
-    private static volatile boolean enabled = true;
+    private static volatile boolean enabled = false;
 
     private DebugLog() {
     }
