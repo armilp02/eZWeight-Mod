@@ -6,11 +6,15 @@ import com.armilp.ezweight.registry.ModAttributes;
 import com.armilp.ezweight.util.BackpackIdUtils;
 import com.armilp.ezweight.util.DebugLog;
 import com.mrcrayfish.backpacked.BackpackHelper;
+import com.mrcrayfish.backpacked.inventory.BackpackedInventoryAccess;
+import com.mrcrayfish.backpacked.inventory.BackpackInventory;
 import com.tiviacz.travelersbackpack.inventory.BackpackWrapper;
 import com.tiviacz.travelersbackpack.items.TravelersBackpackItem;
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
@@ -24,6 +28,7 @@ import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.Set;
 
 public class PlayerWeightHandler {
@@ -99,50 +104,43 @@ public class PlayerWeightHandler {
     }
 
     private static double getBackpackedWeight(Player player, Set<Object> visited) {
-        if (!(player instanceof ServerPlayer)) {
-            return 0.0;
-        }
-
-        if (!(player instanceof com.mrcrayfish.backpacked.inventory.BackpackedInventoryAccess access)) {
-            DebugLog.log("Not BackpackedInventoryAccess");
-            return 0.0;
-        }
-
+        NonNullList<ItemStack> backpacks = BackpackHelper.getBackpacks(player);
         double total = 0.0;
-        int max = com.mrcrayfish.backpacked.inventory.ManagementInventory.getMaxEquipable();
-        DebugLog.log("Max equipable: %d", max);
 
-        for (int i = 0; i < max; i++) {
-            ItemStack backpack = BackpackHelper.getBackpackStack(player, i);
-            DebugLog.log("Slot %d: %s", i, backpack.isEmpty() ? "EMPTY" : backpack.getItem().getName(backpack).getString());
-
-            if (backpack.isEmpty()) {
-                continue;
-            }
+        for (ItemStack backpack : backpacks) {
+            if (backpack.isEmpty()) continue;
 
             double backpackWeight = ItemWeightRegistry.getWeight(backpack) * backpack.getCount();
             total += backpackWeight;
-            DebugLog.log("Backpack weight: %s", backpackWeight);
 
-            com.mrcrayfish.backpacked.inventory.BackpackInventory inventory = access.backpacked$GetBackpackInventory(i);
-            DebugLog.log("Inventory for slot %d: %s", i, inventory == null ? "NULL" : "FOUND, size: " + inventory.getContainerSize());
+            DebugLog.log("Backpack: %s weight=%s", backpack.getItem().getName(backpack).getString(), backpackWeight);
+        }
 
-            if (inventory != null) {
-                for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-                    ItemStack inner = inventory.getItem(slot);
+        BackpackedInventoryAccess access = (BackpackedInventoryAccess) player;
+        Iterator<BackpackInventory> inventories = access.backpacked$streamNonNullBackpackInventories().iterator();
 
-                    if (!inner.isEmpty()) {
-                        DebugLog.log("  Slot %d: %s x%d weight: %s", slot, inner.getItem().getName(inner).getString(), inner.getCount(), ItemWeightRegistry.getWeight(inner));
-                        total += ItemWeightRegistry.getWeight(inner) * inner.getCount();
-                    }
-                }
-            } else {
-                DebugLog.log("Using extractWeightFromTag");
-                total += extractWeightFromTag(backpack.getTag(), visited);
-            }
+        while (inventories.hasNext()) {
+            BackpackInventory inventory = inventories.next();
+            double contentsWeight = getContainerWeight(inventory, player, visited);
+            total += contentsWeight;
+
+            DebugLog.log("Backpack contents weight=%s", contentsWeight);
         }
 
         DebugLog.log("Total backpacked weight: %s", total);
+        return total;
+    }
+
+    private static double getContainerWeight(Container container, @Nullable Player player, Set<Object> visited) {
+        double total = 0.0;
+
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            ItemStack stack = container.getItem(i);
+            if (!stack.isEmpty()) {
+                total += getStackWeight(stack, player, visited);
+            }
+        }
+
         return total;
     }
 
@@ -240,6 +238,5 @@ public class PlayerWeightHandler {
 
         return total;
     }
-
 
 }

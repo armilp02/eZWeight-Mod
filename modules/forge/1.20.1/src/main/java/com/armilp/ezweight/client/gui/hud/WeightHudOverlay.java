@@ -2,7 +2,6 @@ package com.armilp.ezweight.client.gui.hud;
 
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.data.WeightSyncData;
-import com.armilp.ezweight.player.PlayerWeightHandler;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -115,7 +114,7 @@ public class WeightHudOverlay {
     }
 
     private static void renderWeightHud(Minecraft mc, GuiGraphics graphics, CompoundTag data) {
-        double weight = PlayerWeightHandler.getTotalWeight(mc.player);
+        double weight = WeightSyncData.getTotalWeight();
         double maxWeight = WeightSyncData.getMaxWeight();
         int displayMode = data.getInt(NBT_KEY_DISPLAY_MODE);
 

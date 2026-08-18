@@ -4,9 +4,11 @@ import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.levels.WeightLevelManager;
 import com.armilp.ezweight.network.EZWeightNetwork;
+import com.armilp.ezweight.network.sync.TotalWeightSyncPacket;
 import com.armilp.ezweight.network.sync.WeightLevelsSyncPacket;
 import com.armilp.ezweight.network.sync.WeightSyncPacket;
 import com.armilp.ezweight.player.DynamicMaxWeightCalculator;
+import com.armilp.ezweight.player.PlayerWeightHandler;
 import com.armilp.ezweight.registry.ModAttributes;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -25,6 +27,7 @@ public class CommonEvents {
 
     // Track last synced weight to avoid unnecessary network traffic
     private static final Map<UUID, Double> lastSyncedWeights = new HashMap<>();
+    private static final Map<UUID, Double> lastSyncedTotalWeights = new HashMap<>();
 
     @SubscribeEvent
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
@@ -46,6 +49,13 @@ public class CommonEvents {
 
             // 4. Store initial value to avoid immediate re-sync
             lastSyncedWeights.put(serverPlayer.getUUID(), maxWeight);
+
+            double totalWeight = PlayerWeightHandler.getTotalWeight(serverPlayer);
+            EZWeightNetwork.CHANNEL.send(
+                    PacketDistributor.PLAYER.with(() -> serverPlayer),
+                    new TotalWeightSyncPacket(totalWeight)
+            );
+            lastSyncedTotalWeights.put(serverPlayer.getUUID(), totalWeight);
 
             EZWeight.LOGGER.debug("Player {} joined with max weight: {}kg",
                     serverPlayer.getName().getString(), maxWeight);
@@ -78,6 +88,16 @@ public class CommonEvents {
             EZWeight.LOGGER.debug("Synced weight for {}: {}kg",
                     player.getName().getString(), currentMaxWeight);
         }
+
+        double currentTotalWeight = PlayerWeightHandler.getTotalWeight(serverPlayer);
+        Double lastSyncedTotal = lastSyncedTotalWeights.get(player.getUUID());
+        if (lastSyncedTotal == null || Math.abs(currentTotalWeight - lastSyncedTotal) > 0.001) {
+            EZWeightNetwork.CHANNEL.send(
+                    PacketDistributor.PLAYER.with(() -> serverPlayer),
+                    new TotalWeightSyncPacket(currentTotalWeight)
+            );
+            lastSyncedTotalWeights.put(player.getUUID(), currentTotalWeight);
+        }
     }
 
     @SubscribeEvent
@@ -90,6 +110,13 @@ public class CommonEvents {
                     new WeightSyncPacket(maxWeight)
             );
             lastSyncedWeights.put(serverPlayer.getUUID(), maxWeight);
+
+            double totalWeight = PlayerWeightHandler.getTotalWeight(serverPlayer);
+            EZWeightNetwork.CHANNEL.send(
+                    PacketDistributor.PLAYER.with(() -> serverPlayer),
+                    new TotalWeightSyncPacket(totalWeight)
+            );
+            lastSyncedTotalWeights.put(serverPlayer.getUUID(), totalWeight);
         }
     }
 
@@ -103,6 +130,13 @@ public class CommonEvents {
                     new WeightSyncPacket(maxWeight)
             );
             lastSyncedWeights.put(serverPlayer.getUUID(), maxWeight);
+
+            double totalWeight = PlayerWeightHandler.getTotalWeight(serverPlayer);
+            EZWeightNetwork.CHANNEL.send(
+                    PacketDistributor.PLAYER.with(() -> serverPlayer),
+                    new TotalWeightSyncPacket(totalWeight)
+            );
+            lastSyncedTotalWeights.put(serverPlayer.getUUID(), totalWeight);
         }
     }
 
@@ -111,6 +145,7 @@ public class CommonEvents {
         // Clean up tracking data
         if (event.getEntity() != null) {
             lastSyncedWeights.remove(event.getEntity().getUUID());
+            lastSyncedTotalWeights.remove(event.getEntity().getUUID());
         }
     }
 

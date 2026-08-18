@@ -49,6 +49,14 @@ public class EZWeightNetwork {
                 WeightSyncPacket::handle
         );
 
+        CHANNEL.registerMessage(
+                id++,
+                TotalWeightSyncPacket.class,
+                TotalWeightSyncPacket::encode,
+                TotalWeightSyncPacket::decode,
+                TotalWeightSyncPacket::handle
+        );
+
         CHANNEL.registerMessage(id++,
                 WeightLevelsSyncPacket.class,
                 WeightLevelsSyncPacket::encode,

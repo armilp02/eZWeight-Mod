@@ -7,6 +7,7 @@ import net.minecraft.world.entity.player.Player;
 public class WeightSyncData {
 
     private static double cachedMaxWeight = 100.0;
+    private static double cachedTotalWeight = 0.0;
     private static boolean needsUpdate = false;
 
     public static void updateDynamicMaxWeight(Player player) {
@@ -37,5 +38,13 @@ public class WeightSyncData {
 
     public static void setMaxWeight(double weight) {
         cachedMaxWeight = weight;
+    }
+
+    public static double getTotalWeight() {
+        return cachedTotalWeight;
+    }
+
+    public static void setTotalWeight(double weight) {
+        cachedTotalWeight = weight;
     }
 }

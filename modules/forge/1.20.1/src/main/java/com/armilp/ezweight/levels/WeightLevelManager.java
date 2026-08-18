@@ -28,10 +28,28 @@ public class WeightLevelManager {
 
     public static void init(Path configDir) {
         File file = configDir.resolve(FILE_NAME).toFile();
-        if (!file.exists()) {
-            generateDefaultFile(file);
+        double base = WeightConfig.COMMON.BASE_WEIGHT.get();
+        double max = WeightConfig.COMMON.MAX_WEIGHT.get();
+
+        if (!file.exists() || !matchesCurrentConfig(file, base, max)) {
+            generateDefaultFile(file, base, max);
         }
+
         loadFromFile(file);
+    }
+
+    private static boolean matchesCurrentConfig(File file, double base, double max) {
+        try (FileReader reader = new FileReader(file)) {
+            JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
+            if (!root.has("base_weight") || !root.has("max_weight")) {
+                return false;
+            }
+            double storedBase = root.get("base_weight").getAsDouble();
+            double storedMax = root.get("max_weight").getAsDouble();
+            return Math.abs(storedBase - base) < 0.0001 && Math.abs(storedMax - max) < 0.0001;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private static void loadFromFile(File file) {
@@ -74,12 +92,9 @@ public class WeightLevelManager {
         }
     }
 
-    private static void generateDefaultFile(File file) {
+    private static void generateDefaultFile(File file, double base, double max) {
         JsonObject root = new JsonObject();
         JsonArray levels = new JsonArray();
-
-        double base = WeightConfig.COMMON.BASE_WEIGHT.get();
-        double max = WeightConfig.COMMON.MAX_WEIGHT.get();
 
         double range = max - base;
         double step = range / 6.0;
@@ -107,6 +122,8 @@ public class WeightLevelManager {
 
         root.add("levels", levels);
         root.addProperty("version", 1);
+        root.addProperty("base_weight", base);
+        root.addProperty("max_weight", max);
 
         try {
             file.getParentFile().mkdirs();
@@ -147,7 +164,6 @@ public class WeightLevelManager {
                 .orElse(null);
     }
 
-    // NEW: Get level based on player's weight percentage
     public static WeightLevel getLevelForPlayer(Player player) {
         if (player == null || LEVELS.isEmpty()) {
             return null;
@@ -160,11 +176,7 @@ public class WeightLevelManager {
             return null;
         }
 
-        // Calculate percentage of max weight
         double percentage = currentWeight / maxWeight;
-
-        // Map percentage to the level ranges
-        // The levels are defined with absolute weights, but we treat them as percentages
         double maxLevelWeight = getMaxLevelWeight();
         double mappedWeight = percentage * maxLevelWeight;
 
@@ -173,7 +185,20 @@ public class WeightLevelManager {
 
     private static double getMaxLevelWeight() {
         if (LEVELS.isEmpty()) return 100.0;
-        return LEVELS.get(LEVELS.size() - 1).maxWeight();
+
+        double highestFinite = 0.0;
+        for (WeightLevel level : LEVELS) {
+            double levelMax = level.maxWeight();
+            if (levelMax != Double.MAX_VALUE && levelMax > highestFinite) {
+                highestFinite = levelMax;
+            }
+        }
+
+        if (highestFinite > 0.0) {
+            return highestFinite;
+        }
+
+        return LEVELS.get(LEVELS.size() - 1).minWeight();
     }
 
     public static List<WeightLevel> getLevels() {
