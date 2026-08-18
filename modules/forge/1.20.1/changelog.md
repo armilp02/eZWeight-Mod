@@ -4,7 +4,7 @@
 
 - 🐛 Fixed: Backpacked mod not tossing item if over weight making it allow items in it
 
-- ❌ Removed: Debug spam message. The debug message will be added as a config setting in later update
+- ❌ Removed: Debug spam message. The debug message has been added as a config setting.
 
 - 🔃 Update: Weight system is a player attribute now so changing it will need be done via /attribute command (if you have a bug report it in discord or github)
 

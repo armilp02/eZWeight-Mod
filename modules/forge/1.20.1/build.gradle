@@ -17,7 +17,8 @@ base {
     archivesName = "${mod_name}-forge-${minecraft_version}"
 }
 
-def changelogText = rootProject.file('changelog.md').exists() ? rootProject.file('changelog.md').text : "No changelog available"
+def changelogText = project.file('changelog.md').exists() ? project.file('changelog.md').text : "No changelog available"
+def site_debugMode = true
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
@@ -157,6 +158,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
     mainFile.displayName = "${mod_name}-${mod_version}"
     mainFile.releaseType = 'release'
     mainFile.changelog = changelogText
+    debugMode = site_debugMode
     mainFile.addGameVersion("${minecraft_version}")
     mainFile.addGameVersion("Forge")
     mainFile.addGameVersion("Client")
@@ -178,6 +180,7 @@ modrinth {
     gameVersions = ["${minecraft_version}"] as Iterable<? extends String>
     loaders = ["forge"]
     changelog = changelogText
+    debugMode = site_debugMode
 
     dependencies {
         optional.project 'sophisticated-backpacks'
