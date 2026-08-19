@@ -29,6 +29,13 @@ public class WeightConfig {
     public static class Common {
         public final ModConfigSpec.DoubleValue BASE_WEIGHT;
         public final ModConfigSpec.DoubleValue MAX_WEIGHT;
+
+        public final ModConfigSpec.DoubleValue LIGHT_ENCUMBERED_FORCE;
+        public final ModConfigSpec.DoubleValue ENCUMBERED_FORCE;
+        public final ModConfigSpec.DoubleValue HEAVILY_ENCUMBERED_FORCE;
+        public final ModConfigSpec.DoubleValue OVERBURDENED_FORCE;
+        public final ModConfigSpec.DoubleValue CRUSHED_FORCE;
+
         public final ModConfigSpec.BooleanValue USE_DYNAMIC_WEIGHT;
         public final ModConfigSpec.BooleanValue DYN_FOOD_ENABLED;
         public final ModConfigSpec.DoubleValue DYN_FOOD_INFLUENCE_MULTIPLIER;
@@ -73,6 +80,26 @@ public class WeightConfig {
             MAX_WEIGHT = builder
                     .comment("The base maximum weight a player can carry (kilograms).")
                     .defineInRange("max_weight", 140.0, 0.0, 1000.0);
+
+            LIGHT_ENCUMBERED_FORCE = builder
+                    .comment("Absolute weight threshold for light encumbrance (kilograms).")
+                    .defineInRange("light_encumbered_force", 5.0, 0.0, 1000.0);
+
+            ENCUMBERED_FORCE = builder
+                    .comment("Absolute weight threshold for encumbrance (kilograms).")
+                    .defineInRange("encumbered_force", 15.0, 0.0, 1000.0);
+
+            HEAVILY_ENCUMBERED_FORCE = builder
+                    .comment("Absolute weight threshold for heavy encumbrance (kilograms).")
+                    .defineInRange("heavily_encumbered_force", 25.0, 0.0, 1000.0);
+
+            OVERBURDENED_FORCE = builder
+                    .comment("Absolute weight threshold for overburdened state (kilograms).")
+                    .defineInRange("overburdened_force", 65.0, 0.0, 1000.0);
+
+            CRUSHED_FORCE = builder
+                    .comment("Absolute weight threshold for crushed state (kilograms).")
+                    .defineInRange("crushed_force", 95.0, 0.0, 1000.0);
 
             USE_DYNAMIC_WEIGHT = builder
                     .comment("If true, uses dynamic weight calculations (base weight, food, strength, etc.). If false, only uses max_weight.")

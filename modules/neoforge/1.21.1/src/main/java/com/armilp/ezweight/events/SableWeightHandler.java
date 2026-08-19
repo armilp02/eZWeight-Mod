@@ -1,6 +1,7 @@
 package com.armilp.ezweight.events;
 
 import com.armilp.ezweight.EZWeight;
+import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.registry.ModAttributes;
 import com.armilp.ezweight.registry.ModEffects;
 
@@ -31,11 +32,11 @@ public class SableWeightHandler {
     private static final boolean AERONAUTICS_PRESENT =
             ModList.get().isLoaded("aeronautics_bundled");
 
-    private static final double LIGHT_ENCUMBERED_FORCE = 5.0;
-    private static final double ENCUMBERED_FORCE = 15.0;
-    private static final double HEAVILY_ENCUMBERED_FORCE = 25.0;
-    private static final double OVERBURDENED_FORCE = 65.0;
-    private static final double CRUSHED_FORCE = 95.0;
+    private static final double LIGHT_ENCUMBERED_FORCE = WeightConfig.COMMON.LIGHT_ENCUMBERED_FORCE.get();
+    private static final double ENCUMBERED_FORCE = WeightConfig.COMMON.ENCUMBERED_FORCE.get();
+    private static final double HEAVILY_ENCUMBERED_FORCE = WeightConfig.COMMON.HEAVILY_ENCUMBERED_FORCE.get();
+    private static final double OVERBURDENED_FORCE = WeightConfig.COMMON.OVERBURDENED_FORCE.get();
+    private static final double CRUSHED_FORCE = WeightConfig.COMMON.CRUSHED_FORCE.get();
 
     private static final double MAX_UPWARD_VELOCITY = 1.0;
     private static final double MAX_DOWNWARD_VELOCITY = -2.0;
