@@ -14,6 +14,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 
+
 @EventBusSubscriber(modid = EZWeight.MODID)
 public class ItemPickupEventHandler {
 
@@ -27,40 +28,29 @@ public class ItemPickupEventHandler {
 
         ItemEntity itemEntity = event.getItemEntity();
         ItemStack stack = itemEntity.getItem();
-
-        if (stack.isEmpty()) return;
-
         double itemWeight = ItemWeightRegistry.getWeight(stack);
-        if (itemWeight <= 0) return;
 
         int maxPickupCount = (int) Math.floor((maxWeight - currentWeight) / itemWeight);
-
         if (maxPickupCount <= 0) {
             event.setCanPickup(TriState.FALSE);
-
             player.displayClientMessage(
-                    Component.translatable(
-                            "message.ezweight.pickup_blocked",
+                    Component.translatable("message.ezweight.pickup_blocked",
                             String.format("%.1f", currentWeight),
                             String.format("%.1f", maxWeight)
-                    ),
-                    true
+                    ), true
             );
             return;
         }
 
         int availableCount = stack.getCount();
-
         if (maxPickupCount < availableCount) {
-            event.setCanPickup(TriState.FALSE);
-
             ItemStack partial = stack.copy();
             partial.setCount(maxPickupCount);
-
             boolean added = player.getInventory().add(partial);
-
             if (added) {
                 stack.shrink(maxPickupCount);
+                itemEntity.setItem(stack);
+                event.setCanPickup(TriState.TRUE);
                 itemEntity.setPickUpDelay(10);
             }
         }

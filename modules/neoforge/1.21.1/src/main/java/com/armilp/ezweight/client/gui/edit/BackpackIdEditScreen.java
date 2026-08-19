@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class BackpackIdEditScreen extends Screen {
 
@@ -151,7 +152,7 @@ public class BackpackIdEditScreen extends Screen {
             }
 
             ItemWeightRegistry.setWeight(targetId, newWeight);
-            EZWeightNetwork.sendToServer(WeightUpdatePacket.REGISTRATION, new WeightUpdatePacket(targetId, newWeight));
+            PacketDistributor.sendToServer(new WeightUpdatePacket(targetId, newWeight));
 
             if (parent instanceof WeightMenuScreen weightMenuScreen) {
                 weightMenuScreen.onWeightUpdated();
@@ -242,7 +243,7 @@ public class BackpackIdEditScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        if (weightBox != null) weightBox.getValue();
-        if (idBox != null) idBox.getValue();
+//        if (weightBox != null) weightBox;
+//        if (idBox != null) idBox.getValue();
     }
 }

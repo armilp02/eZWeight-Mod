@@ -2,16 +2,23 @@ package com.armilp.ezweight.player;
 
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.data.ItemWeightRegistry;
+import com.armilp.ezweight.registry.ModAttributes;
 import com.armilp.ezweight.util.BackpackIdUtils;
+import com.armilp.ezweight.util.DebugLog;
 import com.mrcrayfish.backpacked.BackpackHelper;
+import com.mrcrayfish.backpacked.inventory.BackpackedInventoryAccess;
+import com.mrcrayfish.backpacked.inventory.BackpackInventory;
 import com.tiviacz.travelersbackpack.inventory.BackpackWrapper;
 import com.tiviacz.travelersbackpack.items.TravelersBackpackItem;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
@@ -20,64 +27,55 @@ import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class PlayerWeightHandler {
+
+    public static double getExtendedStackWeightWithContents(ItemStack stack, @Nullable Player player) {
+        HolderLookup.Provider registries = player != null ? player.level().registryAccess() : null;
+        return getStackWeight(stack, player, Collections.newSetFromMap(new IdentityHashMap<>()), registries);
+    }
 
     private static final boolean CURIOS_LOADED = ModList.get().isLoaded(CuriosApi.MODID);
     private static final boolean BACKPACKED_LOADED = ModList.get().isLoaded("backpacked");
 
-    private static final boolean DEBUG_BACKPACKED_WEIGHT = false;
-
-    private static void debug(String message) {
-        if (DEBUG_BACKPACKED_WEIGHT) {
-            System.out.println("[eZWeight/BackpackedDebug] " + message);
-        }
-    }
-
-    public static double getExtendedStackWeightWithContents(ItemStack stack, @Nullable Player player) {
-        return getStackWeight(stack, player, Collections.newSetFromMap(new IdentityHashMap<>()));
-    }
-
     public static double getTotalWeight(Player player) {
         Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        HolderLookup.Provider registries = player.level().registryAccess();
         double total = 0.0;
 
-        total += getInventoryWeight(player, visited);
+        total += getInventoryWeight(player, visited, registries);
 
         if (CURIOS_LOADED) {
-            total += getCuriosWeight(player, visited);
+            total += getCuriosWeight(player, visited, registries);
         }
 
         if (BACKPACKED_LOADED) {
-            total += getBackpackedWeight(player, visited);
+            total += getBackpackedWeight(player, visited, registries);
         }
 
         return total;
     }
 
-    private static double getInventoryWeight(Player player, Set<Object> visited) {
+    private static double getInventoryWeight(Player player, Set<Object> visited, HolderLookup.Provider registries) {
         double total = 0.0;
 
         for (ItemStack stack : player.getInventory().items) {
-            total += getStackWeight(stack, player, visited);
+            total += getStackWeight(stack, player, visited, registries);
         }
 
         for (ItemStack stack : player.getInventory().armor) {
-            total += getStackWeight(stack, player, visited);
+            total += getStackWeight(stack, player, visited, registries);
         }
 
         for (ItemStack stack : player.getInventory().offhand) {
-            total += getStackWeight(stack, player, visited);
+            total += getStackWeight(stack, player, visited, registries);
         }
 
         return total;
     }
 
-    private static double getCuriosWeight(Player player, Set<Object> visited) {
+    private static double getCuriosWeight(Player player, Set<Object> visited, HolderLookup.Provider registries) {
         Optional<ICuriosItemHandler> curios = CuriosApi.getCuriosInventory(player);
 
         return curios.map(handler -> {
@@ -90,79 +88,63 @@ public class PlayerWeightHandler {
                     continue;
                 }
 
-                total += getHandlerWeight(itemHandler, player, visited);
+                total += getHandlerWeight(itemHandler, player, visited, registries);
             }
 
             return total;
         }).orElse(0.0);
     }
 
-    private static double getBackpackedWeight(Player player, Set<Object> visited) {
-        if (!(player instanceof ServerPlayer serverPlayer)) {
-            return 0.0;
+    public static double getMaxWeight(Player player) {
+        var attribute = player.getAttribute(ModAttributes.WEIGHT);
+        if (attribute != null) {
+            return attribute.getValue();
         }
+        return WeightConfig.COMMON.MAX_WEIGHT.get();
+    }
 
-        if (!(player instanceof com.mrcrayfish.backpacked.inventory.BackpackedInventoryAccess access)) {
-            debug("Not BackpackedInventoryAccess");
-            return 0.0;
-        }
-
+    private static double getBackpackedWeight(Player player, Set<Object> visited, HolderLookup.Provider registries) {
+        NonNullList<ItemStack> backpacks = BackpackHelper.getBackpacks(player);
         double total = 0.0;
-        int max = com.mrcrayfish.backpacked.inventory.ManagementInventory.getMaxEquipable();
 
-        debug("Max equipable: " + max);
-
-        for (int i = 0; i < max; i++) {
-            ItemStack backpack = BackpackHelper.getBackpackStack(player, i);
-
-            debug("Slot " + i + ": " + (backpack.isEmpty()
-                    ? "EMPTY"
-                    : backpack.getItem().getName(backpack).getString()));
-
-            if (backpack.isEmpty()) {
-                continue;
-            }
+        for (ItemStack backpack : backpacks) {
+            if (backpack.isEmpty()) continue;
 
             double backpackWeight = ItemWeightRegistry.getWeight(backpack) * backpack.getCount();
             total += backpackWeight;
 
-            debug("Backpack weight: " + backpackWeight);
-
-            com.mrcrayfish.backpacked.inventory.BackpackInventory inventory =
-                    access.backpacked$GetBackpackInventory(i);
-
-            debug("Inventory for slot " + i + ": " + (inventory == null
-                    ? "NULL"
-                    : "FOUND, size: " + inventory.getContainerSize()));
-
-            if (inventory != null) {
-                for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-                    ItemStack inner = inventory.getItem(slot);
-
-                    if (!inner.isEmpty()) {
-                        double innerWeight = ItemWeightRegistry.getWeight(inner) * inner.getCount();
-
-                        debug("  Slot " + slot + ": "
-                                + inner.getItem().getName(inner).getString()
-                                + " x" + inner.getCount()
-                                + " weight: " + ItemWeightRegistry.getWeight(inner));
-
-                        total += innerWeight;
-                    }
-                }
-            } else {
-                debug("Using extractWeightFromTag");
-
-                CompoundTag tag = saveStackToTag(backpack, serverPlayer.registryAccess());
-                total += extractWeightFromTag(tag, visited, serverPlayer.registryAccess());
-            }
+            DebugLog.log("Backpack: %s weight=%s", backpack.getItem().getName(backpack).getString(), backpackWeight);
         }
 
-        debug("Total backpacked weight: " + total);
+        BackpackedInventoryAccess access = (BackpackedInventoryAccess) player;
+        Iterator<BackpackInventory> inventories = access.backpacked$streamNonNullBackpackInventories().iterator();
+
+        while (inventories.hasNext()) {
+            BackpackInventory inventory = inventories.next();
+            double contentsWeight = getContainerWeight(inventory, player, visited, registries);
+            total += contentsWeight;
+
+            DebugLog.log("Backpack contents weight=%s", contentsWeight);
+        }
+
+        DebugLog.log("Total backpacked weight: %s", total);
         return total;
     }
 
-    public static double getStackWeight(ItemStack stack, @Nullable Player player, Set<Object> visited) {
+    private static double getContainerWeight(Container container, @Nullable Player player, Set<Object> visited, HolderLookup.Provider registries) {
+        double total = 0.0;
+
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            ItemStack stack = container.getItem(i);
+            if (!stack.isEmpty()) {
+                total += getStackWeight(stack, player, visited, registries);
+            }
+        }
+
+        return total;
+    }
+
+    public static double getStackWeight(ItemStack stack, @Nullable Player player, Set<Object> visited, @Nullable HolderLookup.Provider registries) {
         if (stack.isEmpty()) {
             return 0.0;
         }
@@ -173,11 +155,11 @@ public class PlayerWeightHandler {
             return total;
         }
 
-        IItemHandler handler = stack.getCapability(Capabilities.ItemHandler.ITEM);
+        IItemHandler capability = stack.getCapability(Capabilities.ItemHandler.ITEM);
 
-        if (handler != null) {
-            if (visited.add(handler)) {
-                double contents = getHandlerWeight(handler, player, visited);
+        if (capability != null) {
+            if (visited.add(capability)) {
+                double contents = getHandlerWeight(capability, player, visited, registries);
 
                 if (WeightConfig.COMMON.BACKPACK_WEIGHT_REDUCTION_ENABLED.get()
                         && BackpackIdUtils.isBackpackItem(stack)) {
@@ -186,9 +168,10 @@ public class PlayerWeightHandler {
 
                 total += contents;
             }
-        } else if (player instanceof ServerPlayer serverPlayer) {
-            CompoundTag tag = saveStackToTag(stack, serverPlayer.registryAccess());
-            total += extractWeightFromTag(tag, visited, serverPlayer.registryAccess());
+        } else {
+            CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+            CompoundTag tag = (data != null && !data.isEmpty()) ? data.copyTag() : null;
+            total += extractWeightFromTag(tag, visited, registries);
         }
 
         if (BackpackIdUtils.TRAVELERS_BACKPACK_LOADED
@@ -196,10 +179,10 @@ public class PlayerWeightHandler {
                 && player != null) {
 
             BackpackWrapper wrapper = new BackpackWrapper(stack, 1, player, player.level(), -1);
-            IItemHandler travelerHandler = wrapper.getStorage();
+            IItemHandler handler = wrapper.getStorage();
 
-            if (visited.add(travelerHandler)) {
-                double contents = getHandlerWeight(travelerHandler, player, visited);
+            if (visited.add(handler)) {
+                double contents = getHandlerWeight(handler, player, visited, registries);
 
                 if (WeightConfig.COMMON.BACKPACK_WEIGHT_REDUCTION_ENABLED.get()) {
                     contents = BackpackIdUtils.calculateBackpackContentsWeight(stack, contents);
@@ -212,26 +195,22 @@ public class PlayerWeightHandler {
         return total;
     }
 
-    private static double getHandlerWeight(IItemHandler handler, @Nullable Player player, Set<Object> visited) {
+    private static double getHandlerWeight(IItemHandler handler, @Nullable Player player, Set<Object> visited, @Nullable HolderLookup.Provider registries) {
         double total = 0.0;
 
         for (int i = 0; i < handler.getSlots(); i++) {
             ItemStack stack = handler.getStackInSlot(i);
 
             if (!stack.isEmpty()) {
-                total += getStackWeight(stack, player, visited);
+                total += getStackWeight(stack, player, visited, registries);
             }
         }
 
         return total;
     }
 
-    public static double extractWeightFromTag(
-            @Nullable CompoundTag tag,
-            Set<Object> visited,
-            HolderLookup.Provider registryAccess
-    ) {
-        if (tag == null || tag.isEmpty()) {
+    public static double extractWeightFromTag(@Nullable CompoundTag tag, Set<Object> visited, @Nullable HolderLookup.Provider registries) {
+        if (tag == null || tag.isEmpty() || registries == null) {
             return 0.0;
         }
 
@@ -243,16 +222,15 @@ public class PlayerWeightHandler {
                     ListTag list = tag.getList(key, 10);
 
                     for (int i = 0; i < list.size(); i++) {
-                        CompoundTag itemTag = list.getCompound(i);
-                        ItemStack stack = ItemStack.parseOptional(registryAccess, itemTag);
+                        ItemStack stack = ItemStack.parseOptional(registries, list.getCompound(i));
 
                         if (!stack.isEmpty()) {
-                            total += getStackWeight(stack, null, visited);
+                            total += getStackWeight(stack, null, visited, registries);
                         }
                     }
                 } else if (tag.contains(key, 10)) {
                     CompoundTag inner = tag.getCompound(key);
-                    total += extractWeightFromTag(inner, visited, registryAccess);
+                    total += extractWeightFromTag(inner, visited, registries);
                 }
             } catch (Exception ignored) {
             }
@@ -261,11 +239,4 @@ public class PlayerWeightHandler {
         return total;
     }
 
-    private static CompoundTag saveStackToTag(ItemStack stack, HolderLookup.Provider registryAccess) {
-        try {
-            return (CompoundTag) stack.save(registryAccess);
-        } catch (Exception e) {
-            return new CompoundTag();
-        }
-    }
 }

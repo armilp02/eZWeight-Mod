@@ -2,22 +2,21 @@ package com.armilp.ezweight.levels;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.config.WeightConfig;
+import com.armilp.ezweight.player.PlayerWeightHandler;
 import com.google.gson.*;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.player.Player;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class WeightLevelManager {
 
@@ -27,10 +26,28 @@ public class WeightLevelManager {
 
     public static void init(Path configDir) {
         File file = configDir.resolve(FILE_NAME).toFile();
-        if (!file.exists()) {
-            generateDefaultFile(file);
+        double base = WeightConfig.COMMON.BASE_WEIGHT.get();
+        double max = WeightConfig.COMMON.MAX_WEIGHT.get();
+
+        if (!file.exists() || !matchesCurrentConfig(file, base, max)) {
+            generateDefaultFile(file, base, max);
         }
+
         loadFromFile(file);
+    }
+
+    private static boolean matchesCurrentConfig(File file, double base, double max) {
+        try (FileReader reader = new FileReader(file)) {
+            JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
+            if (!root.has("base_weight") || !root.has("max_weight")) {
+                return false;
+            }
+            double storedBase = root.get("base_weight").getAsDouble();
+            double storedMax = root.get("max_weight").getAsDouble();
+            return Math.abs(storedBase - base) < 0.0001 && Math.abs(storedMax - max) < 0.0001;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private static void loadFromFile(File file) {
@@ -51,12 +68,13 @@ public class WeightLevelManager {
                     for (JsonElement e : jsonEffects) {
                         JsonObject effObj = e.getAsJsonObject();
                         String id = effObj.get("effect").getAsString();
-                        MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(ResourceLocation.parse(id));
-                        if (effect != null) {
-                            Holder<MobEffect> holder = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect);
+                        ResourceLocation location = ResourceLocation.parse(id);
+                        java.util.Optional<Holder.Reference<MobEffect>> effectOpt = BuiltInRegistries.MOB_EFFECT.getHolder(location);
+                        if (effectOpt.isPresent()) {
+                            Holder<MobEffect> effect = effectOpt.get();
                             int amplifier = effObj.has("amplifier") ? effObj.get("amplifier").getAsInt() : 0;
                             int duration = effObj.has("duration") ? effObj.get("duration").getAsInt() : 6000;
-                            effects.add(new MobEffectInstance(holder, duration, amplifier, false, false, true));
+                            effects.add(new MobEffectInstance(effect, duration, amplifier, false, false, true));
                         } else {
                             EZWeight.LOGGER.warn("Unknown effect '{}' in weight level '{}'", id, name);
                         }
@@ -74,12 +92,9 @@ public class WeightLevelManager {
         }
     }
 
-    private static void generateDefaultFile(File file) {
+    private static void generateDefaultFile(File file, double base, double max) {
         JsonObject root = new JsonObject();
         JsonArray levels = new JsonArray();
-
-        double base = WeightConfig.COMMON.BASE_WEIGHT.get();
-        double max = WeightConfig.COMMON.MAX_WEIGHT.get();
 
         double range = max - base;
         double step = range / 6.0;
@@ -107,6 +122,8 @@ public class WeightLevelManager {
 
         root.add("levels", levels);
         root.addProperty("version", 1);
+        root.addProperty("base_weight", base);
+        root.addProperty("max_weight", max);
 
         try {
             file.getParentFile().mkdirs();
@@ -147,6 +164,43 @@ public class WeightLevelManager {
                 .orElse(null);
     }
 
+    public static WeightLevel getLevelForPlayer(Player player) {
+        if (player == null || LEVELS.isEmpty()) {
+            return null;
+        }
+
+        double currentWeight = PlayerWeightHandler.getTotalWeight(player);
+        double maxWeight = PlayerWeightHandler.getMaxWeight(player);
+
+        if (maxWeight <= 0) {
+            return null;
+        }
+
+        double percentage = currentWeight / maxWeight;
+        double maxLevelWeight = getMaxLevelWeight();
+        double mappedWeight = percentage * maxLevelWeight;
+
+        return getLevelForWeight(mappedWeight);
+    }
+
+    private static double getMaxLevelWeight() {
+        if (LEVELS.isEmpty()) return 100.0;
+
+        double highestFinite = 0.0;
+        for (WeightLevel level : LEVELS) {
+            double levelMax = level.maxWeight();
+            if (levelMax != Double.MAX_VALUE && levelMax > highestFinite) {
+                highestFinite = levelMax;
+            }
+        }
+
+        if (highestFinite > 0.0) {
+            return highestFinite;
+        }
+
+        return LEVELS.get(LEVELS.size() - 1).minWeight();
+    }
+
     public static List<WeightLevel> getLevels() {
         return Collections.unmodifiableList(LEVELS);
     }
@@ -165,13 +219,29 @@ public class WeightLevelManager {
 
                 List<MobEffectInstance> effects = new ArrayList<>();
                 JsonArray effs = obj.getAsJsonArray("effects");
-                for (JsonElement effElement : effs) {
-                    JsonObject effObj = effElement.getAsJsonObject();
-                    MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(ResourceLocation.parse(effObj.get("effect").getAsString()));
-                    Holder<MobEffect> holder = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect);
-                    int amplifier = effObj.get("amplifier").getAsInt();
-                    int duration = effObj.get("duration").getAsInt();
-                    effects.add(new MobEffectInstance(holder, duration, amplifier, false, false, true));
+
+                if (effs != null) {
+                    for (JsonElement effElement : effs) {
+                        JsonObject effObj = effElement.getAsJsonObject();
+                        String effectId = effObj.get("effect").getAsString();
+
+                        // 1. Correctly parse the resource location using 1.21 static methods
+                        ResourceLocation location = ResourceLocation.parse(effectId);
+
+                        // 2. Safely find the holder wrapper instead of pulling raw values
+                        java.util.Optional<net.minecraft.core.Holder.Reference<MobEffect>> effectHolderOpt =
+                                BuiltInRegistries.MOB_EFFECT.getHolder(location);
+
+                        if (effectHolderOpt.isPresent()) {
+                            int amplifier = effObj.get("amplifier").getAsInt();
+                            int duration = effObj.get("duration").getAsInt();
+
+                            // 3. Inject the Holder directly to satisfy the 1.21.1 constructor rules
+                            effects.add(new MobEffectInstance(effectHolderOpt.get(), duration, amplifier, false, false, true));
+                        } else {
+                            EZWeight.LOGGER.warn("Unknown effect ID '{}' defined inside weight level configuration: '{}'", effectId, name);
+                        }
+                    }
                 }
 
                 LEVELS.add(new WeightLevel(name, min, max, effects));
@@ -179,7 +249,7 @@ public class WeightLevelManager {
 
             LEVELS.sort(Comparator.comparingDouble(WeightLevel::minWeight));
         } catch (Exception e) {
-            EZWeight.LOGGER.error("Failed to parse synced weight levels", e);
+            EZWeight.LOGGER.error("Failed to parse synced weight levels from JSON string payload", e);
         }
     }
 
@@ -196,9 +266,7 @@ public class WeightLevelManager {
             JsonArray effs = new JsonArray();
             for (MobEffectInstance eff : level.effects()) {
                 JsonObject effObj = new JsonObject();
-                effObj.addProperty("effect", eff.getEffect().unwrapKey()
-                        .map(key -> key.location().toString())
-                        .orElse("minecraft:luck"));
+                effObj.addProperty("effect", BuiltInRegistries.MOB_EFFECT.getKey(eff.getEffect().value()).toString());
                 effObj.addProperty("amplifier", eff.getAmplifier());
                 effObj.addProperty("duration", eff.getDuration());
                 effs.add(effObj);

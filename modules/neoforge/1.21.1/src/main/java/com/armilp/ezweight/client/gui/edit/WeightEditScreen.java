@@ -12,6 +12,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class WeightEditScreen extends Screen {
 
@@ -79,7 +80,7 @@ public class WeightEditScreen extends Screen {
 
             ItemWeightRegistry.setWeight(effectiveId, newWeight);
 
-            EZWeightNetwork.sendToServer(WeightUpdatePacket.REGISTRATION, new WeightUpdatePacket(effectiveId, newWeight));
+            PacketDistributor.sendToServer(new WeightUpdatePacket(effectiveId, newWeight));
 
             if (parent instanceof WeightMenuScreen) {
                 ((WeightMenuScreen) parent).onWeightUpdated();
@@ -109,7 +110,7 @@ public class WeightEditScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTick);
+        this.renderBackground(graphics, mouseX,mouseY, partialTick);
 
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 50, 0xFFFFFF);
 
@@ -150,6 +151,5 @@ public class WeightEditScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        weightBox.getValue();
     }
 }

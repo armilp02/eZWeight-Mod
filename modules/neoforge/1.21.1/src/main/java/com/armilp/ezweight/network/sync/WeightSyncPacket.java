@@ -2,44 +2,52 @@ package com.armilp.ezweight.network.sync;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.data.WeightSyncData;
-import com.armilp.ezweight.events.NeoForgeNetworkEvent;
-import com.armilp.ezweight.util.PacketToPayload;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+public class WeightSyncPacket implements CustomPacketPayload {
 
-public class WeightSyncPacket {
+    // 1. Define the unique payload Type ID
+    public static final Type<WeightSyncPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(EZWeight.MODID, "weight_sync"));
+
+    // 2. Wrap encode and decode into a modern StreamCodec instance
+    public static final StreamCodec<RegistryFriendlyByteBuf, WeightSyncPacket> STREAM_CODEC = StreamCodec.of(
+            WeightSyncPacket::encode,
+            WeightSyncPacket::decode
+    );
+
     private final double maxWeight;
 
     public WeightSyncPacket(double maxWeight) {
         this.maxWeight = maxWeight;
     }
 
-    public static void encode(WeightSyncPacket msg, FriendlyByteBuf buf) {
-        buf.writeDouble(msg.maxWeight);
+    // Adjusted parameters to match the (buf, packet) codec layout pattern
+    public static void encode(RegistryFriendlyByteBuf buf, WeightSyncPacket packet) {
+        buf.writeDouble(packet.maxWeight);
     }
 
-    public static WeightSyncPacket decode(FriendlyByteBuf buf) {
+    public static WeightSyncPacket decode(RegistryFriendlyByteBuf buf) {
         return new WeightSyncPacket(buf.readDouble());
     }
 
-    public void handle(Supplier<NeoForgeNetworkEvent.Context> contextSupplier) {
-        NeoForgeNetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            if (Minecraft.getInstance().player != null) {
-                WeightSyncData.setMaxWeight(this.maxWeight);
-            }
-        });
-        context.setPacketHandled(true);
+    // 3. Return your explicit CustomPacketPayload type mapping definition
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public static final PacketToPayload.Registration<WeightSyncPacket> REGISTRATION =
-            PacketToPayload.create(
-                    "weight_sync", EZWeight.MODID,
-                    WeightSyncPacket::encode,
-                    WeightSyncPacket::decode,
-                    WeightSyncPacket::handle
-            );
-
+    // 4. Handle work securely on the client game thread using modern IPayloadContext
+    public static void handle(final WeightSyncPacket packet, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (Minecraft.getInstance().player != null) {
+                WeightSyncData.setMaxWeight(packet.maxWeight);
+            }
+        });
+    }
 }

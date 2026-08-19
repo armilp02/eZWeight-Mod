@@ -1,36 +1,43 @@
 package com.armilp.ezweight.network.gui;
 
 import com.armilp.ezweight.EZWeight;
-import com.armilp.ezweight.events.NeoForgeNetworkEvent;
-import com.armilp.ezweight.util.PacketToPayload;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+public class OpenWeightGuiPacket implements CustomPacketPayload {
 
+    // 1. Define the unique payload Type ID required by 1.21.1
+    public static final Type<OpenWeightGuiPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(EZWeight.MODID, "open_weight_gui"));
 
-public class OpenWeightGuiPacket {
+    // 2. Align the StreamCodec with static encoder parameter ordering (buffer first)
+    public static final StreamCodec<RegistryFriendlyByteBuf, OpenWeightGuiPacket> STREAM_CODEC = StreamCodec.of(
+            OpenWeightGuiPacket::encode,
+            OpenWeightGuiPacket::decode
+    );
+
     public OpenWeightGuiPacket() {
     }
 
-    public static void encode(OpenWeightGuiPacket msg, FriendlyByteBuf buf) {
+    // Reordered: RegistryFriendlyByteBuf MUST be the first parameter for method references
+    public static void encode(RegistryFriendlyByteBuf buf, OpenWeightGuiPacket msg) {
+        // Empty as per your original packet implementation
     }
 
-    public static OpenWeightGuiPacket decode(FriendlyByteBuf buf) {
+    public static OpenWeightGuiPacket decode(RegistryFriendlyByteBuf buf) {
         return new OpenWeightGuiPacket();
     }
 
-    public static void handle(OpenWeightGuiPacket msg, Supplier<NeoForgeNetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(OpenWeightGuiHandler::handle);
-        ctx.get().setPacketHandled(true);
+    // 3. Modernized handler using IPayloadContext
+    public static void handle(final OpenWeightGuiPacket msg, final IPayloadContext context) {
+        context.enqueueWork(OpenWeightGuiHandler::handle);
     }
 
-    public static final PacketToPayload.Registration<OpenWeightGuiPacket> REGISTRATION =
-            PacketToPayload.create(
-                    "open_weight_gui", EZWeight.MODID,
-                    OpenWeightGuiPacket::encode,
-                    OpenWeightGuiPacket::decode,
-                    OpenWeightGuiPacket::handle
-            );
-
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
 }
-

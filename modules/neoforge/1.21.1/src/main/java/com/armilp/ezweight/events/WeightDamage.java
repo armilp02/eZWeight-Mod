@@ -1,5 +1,6 @@
 package com.armilp.ezweight.events;
 
+import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.commands.WeightCommands;
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.player.DynamicMaxWeightCalculator;
@@ -17,7 +18,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.List;
 
-@EventBusSubscriber
+@EventBusSubscriber(modid = EZWeight.MODID)
 public class WeightDamage {
 
     private static final String TICK_COUNTER_TAG = "ezweight_damage_tick_counter";
@@ -25,9 +26,8 @@ public class WeightDamage {
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (event.getEntity().level().isClientSide) return;
-
         Player player = event.getEntity();
+        if (player.level().isClientSide) return;
         if (!(player instanceof ServerPlayer serverPlayer)) return;
         if (!WeightCommands.isWeightEnabledFor(serverPlayer)) return;
 
@@ -46,11 +46,7 @@ public class WeightDamage {
         }
 
         CompoundTag data = player.getPersistentData();
-        CompoundTag ezwData = data.contains("ezweight")
-                ? data.getCompound("ezweight")
-                : new CompoundTag();
-
-        int ticksOverweight = ezwData.getInt(TICK_COUNTER_TAG) + 1;
+        int ticksOverweight = data.getInt(TICK_COUNTER_TAG) + 1;
 
         if (ticksOverweight >= TICKS_PER_DAMAGE) {
             ticksOverweight = 0;
@@ -65,16 +61,11 @@ public class WeightDamage {
             }
         }
 
-        ezwData.putInt(TICK_COUNTER_TAG, ticksOverweight);
-        data.put("ezweight", ezwData);
+        data.putInt(TICK_COUNTER_TAG, ticksOverweight);
     }
 
     private static void resetTickCounter(Player player) {
-        CompoundTag data = player.getPersistentData();
-        CompoundTag ezwData = data.getCompound("ezweight");
-
-        ezwData.putInt(TICK_COUNTER_TAG, 0);
-        data.put("ezweight", ezwData);
+        player.getPersistentData().putInt(TICK_COUNTER_TAG, 0);
     }
 
     private static boolean isOverThreshold(double overweightRatio) {
@@ -93,9 +84,7 @@ public class WeightDamage {
         if (!WeightConfig.COMMON.DAMAGE_OVERWEIGHT_ENABLED.get()) {
             return 0.0f;
         }
-        float configured = WeightConfig.COMMON.DAMAGE_PER_SECOND.get().floatValue();
-        if (configured <= 0.0f) return 0.0f;
-        // vanilla ignores damage below 1.0, so enforce a minimum
-        return Math.max(configured, 1.0f);
+
+        return WeightConfig.COMMON.DAMAGE_PER_SECOND.get().floatValue();
     }
 }

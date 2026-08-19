@@ -17,16 +17,14 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import com.armilp.ezweight.EZWeight;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-@EventBusSubscriber(modid = EZWeight.MODID)
+
 public class WeightCommands {
 
     private static final Set<UUID> disabledPlayers = new HashSet<>();
@@ -41,7 +39,7 @@ public class WeightCommands {
                                 .executes(context -> {
                                     CommandSourceStack src = context.getSource();
                                     ServerPlayer player = src.getPlayerOrException();
-                                    EZWeightNetwork.sendToPlayer(OpenWeightGuiPacket.REGISTRATION, new OpenWeightGuiPacket(), player);
+                                    EZWeightNetwork.sendToPlayer(new OpenWeightGuiPacket(), player);
                                     src.sendSuccess(() -> Component.translatable("message.ezweight.gui_open"), true);
                                     return Command.SINGLE_SUCCESS;
                                 })
@@ -114,29 +112,29 @@ public class WeightCommands {
                                         )
                                 )
                         )
-                        .then(Commands.literal("resetmaxweight")
-                                .then(Commands.argument("player", StringArgumentType.word())
-                                        .executes(context -> {
-                                            CommandSourceStack src = context.getSource();
-                                            String playerName = StringArgumentType.getString(context, "player");
-                                            ServerPlayer target = src.getServer().getPlayerList().getPlayerByName(playerName);
-
-                                            if (target == null) {
-                                                src.sendFailure(Component.translatable("message.ezweight.player_not_found", playerName));
-                                                return 0;
-                                            }
-
-                                            PlayerMaxWeightOverride.clear(target.getUUID());
-
-                                            src.sendSuccess(() -> Component.translatable(
-                                                    "message.ezweight.resetmaxweight_success",
-                                                    playerName
-                                            ), true);
-
-                                            return Command.SINGLE_SUCCESS;
-                                        })
-                                )
-                        )
+//                        .then(Commands.literal("resetmaxweight")
+//                                .then(Commands.argument("player", StringArgumentType.word())
+//                                        .executes(context -> {
+//                                            CommandSourceStack src = context.getSource();
+//                                            String playerName = StringArgumentType.getString(context, "player");
+//                                            ServerPlayer target = src.getServer().getPlayerList().getPlayerByName(playerName);
+//
+//                                            if (target == null) {
+//                                                src.sendFailure(Component.translatable("message.ezweight.player_not_found", playerName));
+//                                                return 0;
+//                                            }
+//
+//                                            PlayerMaxWeightOverride.clear(target.getUUID());
+//
+//                                            src.sendSuccess(() -> Component.translatable(
+//                                                    "message.ezweight.resetmaxweight_success",
+//                                                    playerName
+//                                            ), true);
+//
+//                                            return Command.SINGLE_SUCCESS;
+//                                        })
+//                                )
+//                        )
                         .then(Commands.literal("toggle")
                                 .then(Commands.argument("player", StringArgumentType.word())
                                         .executes(context -> {

@@ -2,18 +2,27 @@ package com.armilp.ezweight.network.sync;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.data.ItemWeightRegistry;
-import com.armilp.ezweight.events.NeoForgeNetworkEvent;
-import com.armilp.ezweight.util.PacketToPayload;
 import com.armilp.ezweight.util.BackpackIdUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+public class BackpackConfigUpdatePacket implements CustomPacketPayload {
 
-public class BackpackConfigUpdatePacket {
+    // 1. Define the unique payload Type ID
+    public static final Type<BackpackConfigUpdatePacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(EZWeight.MODID, "backpack_config_update"));
+
+    // 2. Define the static StreamCodec with the proper parameter order (buffer first)
+    public static final StreamCodec<RegistryFriendlyByteBuf, BackpackConfigUpdatePacket> STREAM_CODEC = StreamCodec.of(
+            BackpackConfigUpdatePacket::encode,
+            BackpackConfigUpdatePacket::decode
+    );
 
     public static final int SLOT_OFFHAND    = 200;
     public static final int SLOT_TYPE_WIDE  = -1;
@@ -40,14 +49,15 @@ public class BackpackConfigUpdatePacket {
         this(typeId, weightReduction, maxWeight, SLOT_TYPE_WIDE);
     }
 
-    public static void encode(BackpackConfigUpdatePacket pkt, FriendlyByteBuf buf) {
+    // Fixed: Reordered to match (Buffer, Packet) type signatures
+    public static void encode(RegistryFriendlyByteBuf buf, BackpackConfigUpdatePacket pkt) {
         buf.writeResourceLocation(pkt.typeId);
         buf.writeDouble(pkt.weightReduction);
         buf.writeDouble(pkt.maxWeight);
         buf.writeInt(pkt.slot);
     }
 
-    public static BackpackConfigUpdatePacket decode(FriendlyByteBuf buf) {
+    public static BackpackConfigUpdatePacket decode(RegistryFriendlyByteBuf buf) {
         return new BackpackConfigUpdatePacket(
                 buf.readResourceLocation(),
                 buf.readDouble(),
@@ -56,19 +66,18 @@ public class BackpackConfigUpdatePacket {
         );
     }
 
-    public static void handle(BackpackConfigUpdatePacket pkt,
-                              Supplier<NeoForgeNetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            ServerPlayer player = ctx.get().getSender();
-            if (player == null) return;
-
-            if (pkt.slot == SLOT_TYPE_WIDE) {
-                handleTypeWide(player, pkt);
-            } else {
-                handleInstance(player, pkt);
+    // 3. Update the handle method signature to use the modern IPayloadContext
+    public static void handle(final BackpackConfigUpdatePacket pkt, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // Natively extract and safely cast the server-bound sending player instance
+            if (context.player() instanceof ServerPlayer player) {
+                if (pkt.slot == SLOT_TYPE_WIDE) {
+                    handleTypeWide(player, pkt);
+                } else {
+                    handleInstance(player, pkt);
+                }
             }
         });
-        ctx.get().setPacketHandled(true);
     }
 
     private static void handleTypeWide(ServerPlayer player, BackpackConfigUpdatePacket pkt) {
@@ -139,12 +148,8 @@ public class BackpackConfigUpdatePacket {
         BackpackIdUtils.setInstanceMaxWeight(stack, maxWeight);
     }
 
-    public static final PacketToPayload.Registration<BackpackConfigUpdatePacket> REGISTRATION =
-            PacketToPayload.create(
-                    "backpack_config_update", EZWeight.MODID,
-                    BackpackConfigUpdatePacket::encode,
-                    BackpackConfigUpdatePacket::decode,
-                    BackpackConfigUpdatePacket::handle
-            );
-
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
 }

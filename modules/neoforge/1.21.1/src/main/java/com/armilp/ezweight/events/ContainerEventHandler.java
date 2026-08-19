@@ -5,39 +5,41 @@ import com.armilp.ezweight.commands.WeightCommands;
 import com.armilp.ezweight.data.ItemWeightRegistry;
 import com.armilp.ezweight.player.DynamicMaxWeightCalculator;
 import com.armilp.ezweight.player.PlayerWeightHandler;
+import com.mrcrayfish.backpacked.inventory.BackpackedInventoryAccess;
+import com.mrcrayfish.backpacked.inventory.BackpackInventory;
 import com.tiviacz.travelersbackpack.TravelersBackpack;
 import com.tiviacz.travelersbackpack.inventory.BackpackWrapper;
 import com.tiviacz.travelersbackpack.items.TravelersBackpackItem;
-import jdk.jfr.DataAmount;
-import net.minecraft.core.component.DataComponents;
+import java.util.Iterator;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.capabilities.ItemCapability;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.items.IItemHandler;
-
-import static top.theillusivec4.curios.api.CuriosCapability.ITEM_HANDLER;
 
 
 @EventBusSubscriber(modid = EZWeight.MODID)
 public class ContainerEventHandler {
 
     private static final boolean TRAVELERS_LOADED = ModList.get().isLoaded(TravelersBackpack.MODID);
+    private static final boolean BACKPACKED_LOADED = ModList.get().isLoaded("backpacked");
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (event.getEntity().level().isClientSide()) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        Player entity = event.getEntity();
+        if (entity.level().isClientSide()) return;
+        if (!(entity instanceof ServerPlayer player)) return;
 
         if (!WeightCommands.isWeightEnabledFor(player)) return;
 
         double totalWeight = PlayerWeightHandler.getTotalWeight(player);
-        double maxWeight = DynamicMaxWeightCalculator.calculate(player);  // Peso máximo dinámico
+        double maxWeight = DynamicMaxWeightCalculator.calculate(player);
 
         if (totalWeight > maxWeight) {
             player.displayClientMessage(
@@ -54,6 +56,10 @@ public class ContainerEventHandler {
 
     private static void dropExcessItems(ServerPlayer player, double currentWeight, double maxWeight) {
         currentWeight = dropItemsFromInventory(player, currentWeight, maxWeight);
+
+        if (currentWeight > maxWeight) {
+            currentWeight = dropItemsFromBackpacked(player, currentWeight, maxWeight);
+        }
 
         if (currentWeight > maxWeight) {
         }
@@ -83,6 +89,20 @@ public class ContainerEventHandler {
             }
 
             currentWeight = dropSingleItemFromStack(player, stack, currentWeight);
+        }
+
+        return currentWeight;
+    }
+
+    private static double dropItemsFromBackpacked(ServerPlayer player, double currentWeight, double maxWeight) {
+        if (!BACKPACKED_LOADED) return currentWeight;
+
+        BackpackedInventoryAccess access = (BackpackedInventoryAccess) player;
+        Iterator<BackpackInventory> inventories = access.backpacked$streamNonNullBackpackInventories().iterator();
+
+        while (inventories.hasNext() && currentWeight > maxWeight) {
+            BackpackInventory inventory = inventories.next();
+            currentWeight = dropFromContainer(player, inventory, currentWeight, maxWeight);
         }
 
         return currentWeight;
@@ -119,6 +139,33 @@ public class ContainerEventHandler {
                 if (!extracted.isEmpty()) {
                     player.drop(extracted, true);
                     currentWeight -= ItemWeightRegistry.getWeight(extracted);
+                } else {
+                    break;
+                }
+            }
+        }
+
+        return currentWeight;
+    }
+
+    private static double dropFromContainer(ServerPlayer player, Container container, double currentWeight, double maxWeight) {
+        for (int slot = container.getContainerSize() - 1; slot >= 0 && currentWeight > maxWeight; slot--) {
+            ItemStack stack = container.getItem(slot);
+            if (stack.isEmpty()) continue;
+
+            IItemHandler nested = stack.getCapability(Capabilities.ItemHandler.ITEM);
+            if (nested != null) {
+                currentWeight = dropFromHandler(player, nested, currentWeight, maxWeight);
+                stack = container.getItem(slot);
+                if (stack.isEmpty()) continue;
+            }
+
+            while (currentWeight > maxWeight && !stack.isEmpty()) {
+                ItemStack extracted = container.removeItem(slot, 1);
+                if (!extracted.isEmpty()) {
+                    player.drop(extracted, true);
+                    currentWeight -= ItemWeightRegistry.getWeight(extracted);
+                    container.setChanged();
                 } else {
                     break;
                 }

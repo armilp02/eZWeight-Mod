@@ -1,8 +1,7 @@
 package com.armilp.ezweight.config;
 
+import com.armilp.ezweight.util.DebugLog;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.fml.config.IConfigSpec;
-import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -39,6 +38,7 @@ public class WeightConfig {
         public final ModConfigSpec.DoubleValue DYN_CROUCH_BONUS;
         public final ModConfigSpec.BooleanValue DYN_ARMOR_PENALTY_ENABLED;
         public final ModConfigSpec.DoubleValue DYN_ARMOR_PENALTY_PER_PIECE;
+        public final ModConfigSpec.BooleanValue WEIGHT_DEBUG_MESSAGE;
 
         public final ModConfigSpec.BooleanValue NO_JUMP_WEIGHT_ENABLED;
         public final ModConfigSpec.ConfigValue<List<? extends String>> NO_JUMP_WEIGHT_RANGES;
@@ -64,6 +64,8 @@ public class WeightConfig {
 
         public Common(ModConfigSpec.Builder builder) {
             builder.push("General");
+            WEIGHT_DEBUG_MESSAGE = builder.comment("Debug message.").define("DEBUG_MESSAGE", DebugLog.isEnabled());
+
             BASE_WEIGHT = builder
                     .comment("Default player body weight (kilograms).")
                     .defineInRange("base_weight", 60.0, 30.0, 200.0);

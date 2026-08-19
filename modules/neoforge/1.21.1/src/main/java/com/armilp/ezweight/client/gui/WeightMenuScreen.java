@@ -134,13 +134,12 @@ public class WeightMenuScreen extends Screen {
     }
 
 
-
     @Override
-    public boolean mouseScrolled(double p_94686_, double p_94687_, double p_94688_, double p_294830_) {
-        if (searchBox.isMouseOver(p_94686_, p_94687_)) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (searchBox.isMouseOver(mouseX, mouseY)) {
             return false;
         }
-        return super.mouseScrolled(p_94686_, p_94687_, p_94688_, p_294830_);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -155,7 +154,6 @@ public class WeightMenuScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        searchBox.getValue();
     }
 
     public void onWeightUpdated() {

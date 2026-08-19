@@ -10,7 +10,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 
@@ -37,7 +37,7 @@ public class MultiWeightEditScreen extends Screen {
                 for (WeightListWidget.ItemEntry entry : items) {
                     ResourceLocation id = BuiltInRegistries.ITEM.getKey(entry.stack.getItem());
                     if (id != null) {
-                        EZWeightNetwork.sendToServer(WeightUpdatePacket.REGISTRATION, new WeightUpdatePacket(id, newWeight));
+                        PacketDistributor.sendToServer(new WeightUpdatePacket(id, newWeight));
                     }
                 }
                 this.minecraft.setScreen(parent);
@@ -51,12 +51,9 @@ public class MultiWeightEditScreen extends Screen {
         }).bounds(this.width / 2 - 50, this.height / 2 + 50, 100, 20).build());
     }
 
-
-
-    //
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics,mouseX, mouseY, partialTick);
+        this.renderBackground(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(this.font, Component.translatable("screen.ezweight.edit_multiple"), this.width / 2, this.height / 2 - 30, 0xFFFFFF);
         super.render(graphics, mouseX, mouseY, partialTick);
         weightBox.render(graphics, mouseX, mouseY, partialTick);

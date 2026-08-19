@@ -2,7 +2,6 @@ package com.armilp.ezweight.client.gui.hud;
 
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.data.WeightSyncData;
-import com.armilp.ezweight.player.PlayerWeightHandler;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -13,7 +12,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -22,7 +20,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import java.util.List;
 
-@EventBusSubscriber(modid = "ezweight", value = Dist.CLIENT)
+@EventBusSubscriber(modid = "ezweight")
 public class WeightHudOverlay {
 
     private static final ResourceLocation ICON = ResourceLocation.fromNamespaceAndPath("ezweight", "textures/gui/ezweight_on.png");
@@ -51,11 +49,6 @@ public class WeightHudOverlay {
 
     private static int hudX, hudY, iconX, iconY;
     private static float alpha = 0f;
-
-    // Cache player weight to avoid recalculating every render frame (expensive traversal)
-    private static double cachedPlayerWeight = 0.0;
-    private static long lastWeightCalcMillis = 0L;
-    private static final long WEIGHT_RECALC_INTERVAL_MS = 200L; // recalc at most every 200ms
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRenderScreen(ScreenEvent.Render.Post event) {
@@ -121,13 +114,7 @@ public class WeightHudOverlay {
     }
 
     private static void renderWeightHud(Minecraft mc, GuiGraphics graphics, CompoundTag data) {
-        // Avoid computing the full inventory weight every single render frame — it's expensive.
-        long now = System.currentTimeMillis();
-        if (now - lastWeightCalcMillis > WEIGHT_RECALC_INTERVAL_MS) {
-            cachedPlayerWeight = PlayerWeightHandler.getTotalWeight(mc.player);
-            lastWeightCalcMillis = now;
-        }
-        double weight = cachedPlayerWeight;
+        double weight = WeightSyncData.getTotalWeight();
         double maxWeight = WeightSyncData.getMaxWeight();
         int displayMode = data.getInt(NBT_KEY_DISPLAY_MODE);
 
@@ -136,7 +123,7 @@ public class WeightHudOverlay {
             maxWeight *= KG_TO_LB;
         }
 
-        double weightPercentage = Math.clamp(weight / maxWeight, 0.0, 1.0);
+        double weightPercentage = Math.max(0.0, Math.min(1.0, weight / maxWeight));
         boolean isOverweight = isOverweightThreshold(weightPercentage);
 
         String title = "ᴇᴢᴡᴇɪɢʜᴛ";
@@ -157,7 +144,7 @@ public class WeightHudOverlay {
         if (thresholds.isEmpty()) return false;
 
         try {
-            double threshold = Double.parseDouble(thresholds.getFirst());
+            double threshold = Double.parseDouble(thresholds.get(0));
             return weightPercentage >= threshold;
         } catch (NumberFormatException e) {
             return false;
@@ -284,7 +271,7 @@ public class WeightHudOverlay {
             case RIGHT -> {
                 hudX = inventoryLeft + inventoryWidth + offsetX;
                 hudY = inventoryTop + (inventoryHeight - RENDER_SIZE) / 2 + offsetY;
-                iconX = hudX + RENDER_SIZE + 35;
+                iconX = hudX + RENDER_SIZE + 5;
                 iconY = hudY;
             }
             default -> {
@@ -312,19 +299,12 @@ public class WeightHudOverlay {
         data.putInt(NBT_KEY_DISPLAY_MODE, nextMode);
         data.putBoolean(NBT_KEY_HUD_VISIBLE, nextMode != 2);
 
-        if (mc.level != null) {
-            mc.level.playSound(
-                    mc.player,
-                    mc.player.blockPosition(),
-                    SoundEvents.UI_BUTTON_CLICK.value(),
-                    SoundSource.MASTER,
-                    0.4f,
-                    1.0f
-            );
-        }
-
+        mc.level.playSound(mc.player, mc.player.blockPosition(),
+                SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.MASTER, 0.4f, 1.0f);
         event.setCanceled(true);
     }
+
+
 
     private static boolean isMouseOver(double mouseX, double mouseY, int x, int y, int width, int height) {
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;

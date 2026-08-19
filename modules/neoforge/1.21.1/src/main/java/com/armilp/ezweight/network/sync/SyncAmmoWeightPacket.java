@@ -2,15 +2,25 @@ package com.armilp.ezweight.network.sync;
 
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.data.ItemWeightRegistry;
-import com.armilp.ezweight.events.NeoForgeNetworkEvent;
-import com.armilp.ezweight.util.PacketToPayload;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+public class SyncAmmoWeightPacket implements CustomPacketPayload {
 
-public class SyncAmmoWeightPacket {
+    // 1. Define your unique Type ID constant
+    public static final Type<SyncAmmoWeightPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(EZWeight.MODID, "sync_ammo_weight"));
+
+    // 2. Build the StreamCodec using the corrected static encoder layout
+    public static final StreamCodec<RegistryFriendlyByteBuf, SyncAmmoWeightPacket> STREAM_CODEC = StreamCodec.of(
+            SyncAmmoWeightPacket::encode,
+            SyncAmmoWeightPacket::decode
+    );
+
     private final ResourceLocation gunId;
     private final double ammoWeight;
 
@@ -19,29 +29,27 @@ public class SyncAmmoWeightPacket {
         this.ammoWeight = ammoWeight;
     }
 
-    public static void encode(SyncAmmoWeightPacket packet, FriendlyByteBuf buffer) {
+    // Fixed parameter ordering: RegistryFriendlyByteBuf MUST come first
+    public static void encode(RegistryFriendlyByteBuf buffer, SyncAmmoWeightPacket packet) {
         buffer.writeResourceLocation(packet.gunId);
         buffer.writeDouble(packet.ammoWeight);
     }
 
-    public static SyncAmmoWeightPacket decode(FriendlyByteBuf buffer) {
+    public static SyncAmmoWeightPacket decode(RegistryFriendlyByteBuf buffer) {
         return new SyncAmmoWeightPacket(buffer.readResourceLocation(), buffer.readDouble());
     }
 
-    public static void handle(SyncAmmoWeightPacket packet, Supplier<NeoForgeNetworkEvent.Context> context) {
-        context.get().enqueueWork(() -> {
+    // 3. Updated handler to accept the direct IPayloadContext
+    public static void handle(final SyncAmmoWeightPacket packet, final IPayloadContext context) {
+        context.enqueueWork(() -> {
             if (Minecraft.getInstance().player != null) {
                 ItemWeightRegistry.setGunAmmoWeight(packet.gunId, packet.ammoWeight);
             }
         });
-        context.get().setPacketHandled(true);
     }
 
-    public static final PacketToPayload.Registration<SyncAmmoWeightPacket> REGISTRATION =
-            PacketToPayload.create(
-                    "sync_ammo_weight", EZWeight.MODID,
-                    SyncAmmoWeightPacket::encode,
-                    SyncAmmoWeightPacket::decode,
-                    SyncAmmoWeightPacket::handle
-            );
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
 }

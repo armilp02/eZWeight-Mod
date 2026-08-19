@@ -3,6 +3,8 @@ package com.armilp.ezweight.util;
 import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.data.ItemWeightRegistry;
+import com.tiviacz.travelersbackpack.TravelersBackpack;
+import com.tiviacz.travelersbackpack.items.TravelersBackpackItem;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -10,8 +12,10 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.p3pp3rf1y.sophisticatedbackpacks.SophisticatedBackpacks;
+import net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackItem;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -30,19 +34,11 @@ public class BackpackIdUtils {
     private static final String INSTANCE_PATH_PREFIX = "instance_";
 
     public static final boolean TRAVELERS_BACKPACK_LOADED =
-            ModList.get().isLoaded("travelersbackpack");
-
+            ModList.get().isLoaded(TravelersBackpack.MODID);
     static final boolean SOPHISTICATED_BACKPACKS_LOADED =
-            ModList.get().isLoaded("sophisticatedbackpacks");
+            ModList.get().isLoaded(SophisticatedBackpacks.MOD_ID);
 
-    private static final Class<?> TRAVELERS_BACKPACK_ITEM_CLASS =
-            loadClass("com.tiviacz.travelersbackpack.items.TravelersBackpackItem");
-
-    private static final Class<?> SOPHISTICATED_BACKPACK_ITEM_CLASS =
-            loadClass("net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackItem");
-
-    private static final Class<?> BACKPACKED_BACKPACK_ITEM_CLASS =
-            loadClass("com.mrcrayfish.backpacked.item.BackpackItem");
+    private static final Class<?> BACKPACKED_BACKPACK_ITEM_CLASS = loadClass("com.mrcrayfish.backpacked.item.BackpackItem");
 
     private static Set<ResourceLocation> customBackpackCache = null;
 
@@ -61,10 +57,8 @@ public class BackpackIdUtils {
     private static Set<ResourceLocation> getCustomBackpackIds() {
         if (customBackpackCache == null) {
             customBackpackCache = new HashSet<>();
-
             for (String entry : WeightConfig.COMMON.CUSTOM_BACKPACK_ITEMS.get()) {
                 ResourceLocation rl = ResourceLocation.tryParse(entry.trim());
-
                 if (rl != null) {
                     customBackpackCache.add(rl);
                 } else {
@@ -72,52 +66,64 @@ public class BackpackIdUtils {
                 }
             }
         }
-
         return customBackpackCache;
     }
 
-    private static CompoundTag getCustomData(ItemStack stack) {
-        return stack.getOrDefault(DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
+    // --- Data-components NBT helpers (replaces the removed ItemStack.getTag()/getOrCreateTag()/setTag()) ---
+
+    /**
+     * Mirrors the old {@code stack.getTag()}: returns null if there's no custom data.
+     * The returned tag is a copy; mutating it does NOT affect the stack — use writeTag() to persist changes.
+     */
+    private static CompoundTag getTagOrNull(ItemStack stack) {
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        if (data == null || data.isEmpty()) return null;
+        return data.copyTag();
     }
 
-    private static void setCustomData(ItemStack stack, CompoundTag tag) {
-        if (tag.isEmpty()) {
+    /**
+     * Mirrors the old {@code stack.getOrCreateTag()}: always returns a (possibly empty) tag.
+     * The returned tag is a copy; mutating it does NOT affect the stack — use writeTag() to persist changes.
+     */
+    private static CompoundTag getOrCreateTagCopy(ItemStack stack) {
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return data != null ? data.copyTag() : new CompoundTag();
+    }
+
+    /**
+     * Mirrors the old {@code stack.setTag(tag)} / {@code stack.setTag(null)} pair: writes the tag back
+     * onto the stack's CUSTOM_DATA component, or removes the component entirely if the tag is now empty.
+     */
+    private static void writeTag(ItemStack stack, CompoundTag tag) {
+        if (tag == null || tag.isEmpty()) {
             stack.remove(DataComponents.CUSTOM_DATA);
         } else {
-            stack.set(DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(tag));
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
     }
 
     public static Optional<String> getInstanceUUID(ItemStack stack) {
         if (stack.isEmpty()) return Optional.empty();
-
-        CompoundTag tag = getCustomData(stack);
-
-        if (!tag.contains(NBT_INSTANCE_UUID, Tag.TAG_STRING)) return Optional.empty();
-
+        CompoundTag tag = getTagOrNull(stack);
+        if (tag == null || !tag.contains(NBT_INSTANCE_UUID, Tag.TAG_STRING)) return Optional.empty();
         String raw = tag.getString(NBT_INSTANCE_UUID);
         return raw.isEmpty() ? Optional.empty() : Optional.of(raw);
     }
 
     public static String getOrCreateInstanceUUID(ItemStack stack) {
         if (stack.isEmpty()) return "";
-
-        CompoundTag tag = getCustomData(stack);
-
+        CompoundTag tag = getOrCreateTagCopy(stack);
         if (!tag.contains(NBT_INSTANCE_UUID, Tag.TAG_STRING)
                 || tag.getString(NBT_INSTANCE_UUID).isEmpty()) {
             tag.putString(NBT_INSTANCE_UUID, UUID.randomUUID().toString());
-            setCustomData(stack, tag);
+            writeTag(stack, tag);
         }
-
         return tag.getString(NBT_INSTANCE_UUID);
     }
 
     public static ResourceLocation uuidToResourceLocation(String uuid) {
-        return ResourceLocation.fromNamespaceAndPath(
-                INSTANCE_NAMESPACE,
-                INSTANCE_PATH_PREFIX + uuid.replace("-", "")
-        );
+        return ResourceLocation.fromNamespaceAndPath(INSTANCE_NAMESPACE,
+                INSTANCE_PATH_PREFIX + uuid.replace("-", ""));
     }
 
     public static Optional<ResourceLocation> getInstanceRegistryKey(ItemStack stack) {
@@ -126,34 +132,29 @@ public class BackpackIdUtils {
 
     public static boolean hasBackpackId(ItemStack stack) {
         if (stack.isEmpty()) return false;
-
-        CompoundTag tag = getCustomData(stack);
-        return tag.contains(NBT_BACKPACK_ID, Tag.TAG_STRING);
+        CompoundTag tag = getTagOrNull(stack);
+        return tag != null && tag.contains(NBT_BACKPACK_ID, Tag.TAG_STRING);
     }
 
     public static Optional<ResourceLocation> getBackpackId(ItemStack stack) {
         if (!hasBackpackId(stack)) return Optional.empty();
-
-        CompoundTag tag = getCustomData(stack);
+        CompoundTag tag = getTagOrNull(stack);
+        if (tag == null) return Optional.empty();
         String raw = tag.getString(NBT_BACKPACK_ID);
-
         ResourceLocation parsed = ResourceLocation.tryParse(raw);
-
         if (parsed == null) {
             EZWeight.LOGGER.warn("Invalid BackpackId format: {}", raw);
             return Optional.empty();
         }
-
         return Optional.of(parsed);
     }
 
     public static boolean setBackpackId(ItemStack stack, ResourceLocation backpackId) {
         if (stack.isEmpty()) return false;
-
         try {
-            CompoundTag tag = getCustomData(stack);
+            CompoundTag tag = getOrCreateTagCopy(stack);
             tag.putString(NBT_BACKPACK_ID, backpackId.toString());
-            setCustomData(stack, tag);
+            writeTag(stack, tag);
             return true;
         } catch (Exception e) {
             EZWeight.LOGGER.error("Failed to set BackpackId {} on item", backpackId, e);
@@ -163,11 +164,11 @@ public class BackpackIdUtils {
 
     public static boolean removeBackpackId(ItemStack stack) {
         if (!hasBackpackId(stack)) return false;
-
         try {
-            CompoundTag tag = getCustomData(stack);
+            CompoundTag tag = getTagOrNull(stack);
+            if (tag == null) return false;
             tag.remove(NBT_BACKPACK_ID);
-            setCustomData(stack, tag);
+            writeTag(stack, tag);
             return true;
         } catch (Exception e) {
             EZWeight.LOGGER.error("Failed to remove BackpackId from item", e);
@@ -176,49 +177,43 @@ public class BackpackIdUtils {
     }
 
     public static boolean hasInstanceReduction(ItemStack stack) {
-        CompoundTag tag = getCustomData(stack);
-        return tag.contains(NBT_REDUCTION, Tag.TAG_DOUBLE);
+        CompoundTag tag = getTagOrNull(stack);
+        return tag != null && tag.contains(NBT_REDUCTION, Tag.TAG_DOUBLE);
     }
 
     public static boolean hasInstanceMaxWeight(ItemStack stack) {
-        CompoundTag tag = getCustomData(stack);
-        return tag.contains(NBT_MAX_WEIGHT, Tag.TAG_DOUBLE);
+        CompoundTag tag = getTagOrNull(stack);
+        return tag != null && tag.contains(NBT_MAX_WEIGHT, Tag.TAG_DOUBLE);
     }
 
     public static void setInstanceReduction(ItemStack stack, double reduction) {
         if (stack.isEmpty()) return;
-
-        CompoundTag tag = getCustomData(stack);
+        CompoundTag tag = getOrCreateTagCopy(stack);
         tag.putDouble(NBT_REDUCTION, reduction);
-        setCustomData(stack, tag);
+        writeTag(stack, tag);
     }
 
     public static void setInstanceMaxWeight(ItemStack stack, double maxWeight) {
         if (stack.isEmpty()) return;
-
-        CompoundTag tag = getCustomData(stack);
+        CompoundTag tag = getOrCreateTagCopy(stack);
         tag.putDouble(NBT_MAX_WEIGHT, maxWeight);
-        setCustomData(stack, tag);
+        writeTag(stack, tag);
     }
 
     public static void clearInstanceValues(ItemStack stack) {
-        if (stack.isEmpty()) return;
-
-        CompoundTag tag = getCustomData(stack);
+        CompoundTag tag = getTagOrNull(stack);
+        if (tag == null) return;
         tag.remove(NBT_REDUCTION);
         tag.remove(NBT_MAX_WEIGHT);
         tag.remove(NBT_INSTANCE_UUID);
-        setCustomData(stack, tag);
+        writeTag(stack, tag);
     }
 
-    private static Double lookupRegistryValue(
-            ItemStack stack,
-            String nbtKey,
-            Function<ResourceLocation, Double> registryFn
-    ) {
-        CompoundTag nbt = getCustomData(stack);
+    private static Double lookupRegistryValue(ItemStack stack, String nbtKey,
+                                              Function<ResourceLocation, Double> registryFn) {
+        CompoundTag nbt = getTagOrNull(stack);
 
-        if (nbt.contains(nbtKey, Tag.TAG_DOUBLE)) {
+        if (nbt != null && nbt.contains(nbtKey, Tag.TAG_DOUBLE)) {
             return nbt.getDouble(nbtKey);
         }
 
@@ -236,7 +231,8 @@ public class BackpackIdUtils {
 
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (itemId != null) {
-            return registryFn.apply(itemId);
+            Double v = registryFn.apply(itemId);
+            return v;
         }
 
         return null;
@@ -245,29 +241,20 @@ public class BackpackIdUtils {
     public static double getWeightReductionPercent(ItemStack stack) {
         if (stack.isEmpty()) return 0.0;
 
-        Double found = lookupRegistryValue(
-                stack,
-                NBT_REDUCTION,
-                ItemWeightRegistry::getBackpackWeightReduction
-        );
-
+        Double found = lookupRegistryValue(stack, NBT_REDUCTION,
+                ItemWeightRegistry::getBackpackWeightReduction);
         if (found != null) return found;
 
         if (isBackpackItem(stack)) {
             return WeightConfig.COMMON.BACKPACK_WEIGHT_REDUCTION_DEFAULT.get();
         }
-
         return 0.0;
     }
 
     public static Double getBackpackMaxWeight(ItemStack stack) {
         if (stack.isEmpty()) return null;
-
-        return lookupRegistryValue(
-                stack,
-                NBT_MAX_WEIGHT,
-                ItemWeightRegistry::getBackpackMaxWeight
-        );
+        return lookupRegistryValue(stack, NBT_MAX_WEIGHT,
+                ItemWeightRegistry::getBackpackMaxWeight);
     }
 
     public static boolean isBackpackItem(ItemStack stack) {
@@ -277,22 +264,9 @@ public class BackpackIdUtils {
 
         Item item = stack.getItem();
 
-        if (TRAVELERS_BACKPACK_LOADED
-                && TRAVELERS_BACKPACK_ITEM_CLASS != null
-                && TRAVELERS_BACKPACK_ITEM_CLASS.isInstance(item)) {
-            return true;
-        }
-
-        if (SOPHISTICATED_BACKPACKS_LOADED
-                && SOPHISTICATED_BACKPACK_ITEM_CLASS != null
-                && SOPHISTICATED_BACKPACK_ITEM_CLASS.isInstance(item)) {
-            return true;
-        }
-
-        if (BACKPACKED_BACKPACK_ITEM_CLASS != null
-                && BACKPACKED_BACKPACK_ITEM_CLASS.isInstance(item)) {
-            return true;
-        }
+        if (TRAVELERS_BACKPACK_LOADED && item instanceof TravelersBackpackItem) return true;
+        if (SOPHISTICATED_BACKPACKS_LOADED && item instanceof BackpackItem) return true;
+        if (BACKPACKED_BACKPACK_ITEM_CLASS != null && BACKPACKED_BACKPACK_ITEM_CLASS.isInstance(item)) return true;
 
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
 
@@ -303,15 +277,14 @@ public class BackpackIdUtils {
         return itemId != null && getCustomBackpackIds().contains(itemId);
     }
 
-    public static double calculateBackpackContentsWeight(ItemStack backpack, double originalContentsWeight) {
+    public static double calculateBackpackContentsWeight(ItemStack backpack,
+                                                         double originalContentsWeight) {
         if (!isBackpackItem(backpack)) return originalContentsWeight;
 
         double reduction = getWeightReductionPercent(backpack);
         double reduced = originalContentsWeight * (1.0 - reduction);
-
         Double max = getBackpackMaxWeight(backpack);
         if (max != null && reduced > max) return max;
-
         return reduced;
     }
 
@@ -388,14 +361,9 @@ public class BackpackIdUtils {
         }
 
         public ResourceLocation getEffectiveId() {
-            if (instanceUUID.isPresent()) {
+            if (instanceUUID.isPresent())
                 return BackpackIdUtils.uuidToResourceLocation(instanceUUID.get());
-            }
-
-            if (hasBackpackId) {
-                return backpackId.get();
-            }
-
+            if (hasBackpackId) return backpackId.get();
             return itemId;
         }
 
@@ -408,8 +376,7 @@ public class BackpackIdUtils {
                     backpackId.orElse(null),
                     hasInstanceNBT,
                     getWeightReductionPercent(),
-                    maxWeight != null ? maxWeight + "kg" : "unlimited"
-            );
+                    maxWeight != null ? maxWeight + "kg" : "unlimited");
         }
     }
 }

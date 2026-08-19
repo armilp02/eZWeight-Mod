@@ -64,6 +64,9 @@ dependencies {
     compileOnly "curse.maven:sophisticated-backpacks-422301:8231066"
     runtimeOnly "curse.maven:sophisticated-backpacks-422301:8231066"
 
+    compileOnly "curse.maven:tacz-1-21-1-1353462:8547439"
+    runtimeOnly "curse.maven:tacz-1-21-1-1353462:8547439"
+
     compileOnly "curse.maven:sophisticated-core-618298:8231043"
     runtimeOnly "curse.maven:sophisticated-core-618298:8231043"
 

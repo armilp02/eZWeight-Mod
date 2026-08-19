@@ -8,13 +8,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 
-@EventBusSubscriber(modid = "ezweight", value = Dist.CLIENT)
+
+@EventBusSubscriber(modid = "ezweight")
 public class WeightMiniHudOverlay {
 
     private static final ResourceLocation ICON_GREEN = ResourceLocation.fromNamespaceAndPath("ezweight", "textures/gui/weight_green.png");
@@ -34,6 +33,8 @@ public class WeightMiniHudOverlay {
     private static long greenEntryTime = -1;
     private static boolean fadingOut = false;
     private static float currentAlpha = 1.0f;
+
+
 
 
     @SubscribeEvent

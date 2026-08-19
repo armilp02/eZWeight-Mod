@@ -1,9 +1,11 @@
 package com.armilp.ezweight.client.gui;
 
 import com.armilp.ezweight.client.gui.edit.BackpackIdEditScreen;
+import com.armilp.ezweight.client.gui.edit.GunIdEditScreen;
 import com.armilp.ezweight.client.gui.edit.WeightEditScreen;
 import com.armilp.ezweight.data.ItemWeightRegistry;
 import com.armilp.ezweight.util.BackpackIdUtils;
+import com.armilp.ezweight.util.GunIdUtils;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -100,14 +102,14 @@ public class WeightListWidget extends ObjectSelectionList<WeightListWidget.Entry
         public final ItemStack stack;
         private final double weight;
         private final ResourceLocation effectiveId;
-//        private final boolean hasGunId;
+        private final boolean hasGunId;
         private final boolean isBackpack;
 
         public ItemEntry(ItemStack stack, double weight, ResourceLocation effectiveId) {
             this.stack = stack;
             this.weight = weight;
             this.effectiveId = effectiveId != null ? effectiveId : ItemWeightRegistry.getEffectiveId(stack);
-//            this.hasGunId = GunIdUtils.hasGunId(stack) || GunIdUtils.hasAttachmentId(stack) || GunIdUtils.hasAmmoId(stack);
+            this.hasGunId = GunIdUtils.hasGunId(stack) || GunIdUtils.hasAttachmentId(stack) || GunIdUtils.hasAmmoId(stack);
             this.isBackpack = BackpackIdUtils.isBackpackItem(stack);
         }
 
@@ -119,9 +121,9 @@ public class WeightListWidget extends ObjectSelectionList<WeightListWidget.Entry
             return weight;
         }
 
-//        public boolean hasGunId() {
-//            return hasGunId;
-//        }
+        public boolean hasGunId() {
+            return hasGunId;
+        }
 
         public boolean isBackpack() {
             return isBackpack;
@@ -139,10 +141,9 @@ public class WeightListWidget extends ObjectSelectionList<WeightListWidget.Entry
             }
 
             // Indicador visual para tipos especiales
-//            if (hasGunId) {
-//                graphics.fill(left + 2, top + 2, left + 6, top + 6, 0xFF00AAFF); // Azul para armas
-//            } else
-            if (isBackpack) {
+            if (hasGunId) {
+                graphics.fill(left + 2, top + 2, left + 6, top + 6, 0xFF00AAFF); // Azul para armas
+            } else if (isBackpack) {
                 graphics.fill(left + 2, top + 2, left + 6, top + 6, 0xFF00FF00); // Verde para mochilas
             }
 
@@ -151,18 +152,18 @@ public class WeightListWidget extends ObjectSelectionList<WeightListWidget.Entry
 
             String itemName = stack.getHoverName().getString();
 
-//            double totalWeight = GunIdUtils.calculateTotalWeight(stack);
-//            double baseWeight = GunIdUtils.getBaseWeight(stack);
-//            double attachmentsWeight = GunIdUtils.getAttachmentsWeight(stack);
-//            double ammoWeight = GunIdUtils.getAmmoWeight(stack);
+            double totalWeight = GunIdUtils.calculateTotalWeight(stack);
+            double baseWeight = GunIdUtils.getBaseWeight(stack);
+            double attachmentsWeight = GunIdUtils.getAttachmentsWeight(stack);
+            double ammoWeight = GunIdUtils.getAmmoWeight(stack);
 
-             String weightText = Component.translatable("tooltip.ezweight.item_weight", String.format("%.2f", weight)).getString();
-//
-//            if (attachmentsWeight > 0 || ammoWeight > 0) {
-//                weightText += " §7(Base: " + String.format("%.2f", baseWeight) + ")";
-//                if (attachmentsWeight > 0) weightText += " §d(+" + String.format("%.2f", attachmentsWeight) + ")";
-//                if (ammoWeight > 0) weightText += " §a(+" + String.format("%.2f", ammoWeight) + ")";
-//            }
+            String weightText = Component.translatable("tooltip.ezweight.item_weight", String.format("%.2f", totalWeight)).getString();
+
+            if (attachmentsWeight > 0 || ammoWeight > 0) {
+                weightText += " §7(Base: " + String.format("%.2f", baseWeight) + ")";
+                if (attachmentsWeight > 0) weightText += " §d(+" + String.format("%.2f", attachmentsWeight) + ")";
+                if (ammoWeight > 0) weightText += " §a(+" + String.format("%.2f", ammoWeight) + ")";
+            }
 
             // Agregar info de mochila si aplica
             if (isBackpack) {
@@ -177,12 +178,12 @@ public class WeightListWidget extends ObjectSelectionList<WeightListWidget.Entry
             String idText = "";
             if (!effectiveId.equals(itemId)) {
                 idText = " §7[" + effectiveId.getPath() + "]";
-//                boolean isGun = GunIdUtils.hasGunId(stack);
-//                boolean isAttach = GunIdUtils.hasAttachmentId(stack);
-//                boolean isAmmo = GunIdUtils.hasAmmoId(stack);
-//                if (isGun) idText += " §b[GUN]";
-//                if (isAttach) idText += " §d[ATTACH]";
-//                if (isAmmo) idText += " §a[AMMO]";
+                boolean isGun = GunIdUtils.hasGunId(stack);
+                boolean isAttach = GunIdUtils.hasAttachmentId(stack);
+                boolean isAmmo = GunIdUtils.hasAmmoId(stack);
+                if (isGun) idText += " §b[GUN]";
+                if (isAttach) idText += " §d[ATTACH]";
+                if (isAmmo) idText += " §a[AMMO]";
                 if (isBackpack && BackpackIdUtils.hasBackpackId(stack)) idText += " §2[BACKPACK]";
             } else if (isBackpack) {
                 idText += " §2[BACKPACK]";
@@ -211,25 +212,21 @@ public class WeightListWidget extends ObjectSelectionList<WeightListWidget.Entry
                     // Prioridad: Backpack > Gun > Normal
                     if (isBackpack) {
                         Minecraft.getInstance().setScreen(new BackpackIdEditScreen(parent, stack));
-                    }
-//                    } else if (hasGunId) {
-//                        Minecraft.getInstance().setScreen(new GunIdEditScreen(parent, stack));
-//                    }
-//                    } else if (GunIdUtils.hasAttachmentId(stack) || GunIdUtils.hasAmmoId(stack)) {
-//                        try {
-//                            Minecraft.getInstance().setScreen(new GunIdEditScreen(parent, stack));
-//                        } catch (Exception e) {
-//                            System.out.println("Error al cargar AttachmentItem: " + e.getMessage());
-//                            Minecraft.getInstance().setScreen(new WeightEditScreen(parent, stack, effectiveId));
-//                        }
-//                    }
-                    else {
-
+                    } else if (hasGunId) {
+                        Minecraft.getInstance().setScreen(new GunIdEditScreen(parent, stack));
+                    } else if (GunIdUtils.hasAttachmentId(stack) || GunIdUtils.hasAmmoId(stack)) {
+                        try {
+                            Minecraft.getInstance().setScreen(new GunIdEditScreen(parent, stack));
+                        } catch (Exception e) {
+                            System.out.println("Error al cargar AttachmentItem: " + e.getMessage());
+                            Minecraft.getInstance().setScreen(new WeightEditScreen(parent, stack, effectiveId));
+                        }
+                    } else {
                         Minecraft.getInstance().setScreen(new WeightEditScreen(parent, stack, effectiveId));
                     }
                 }
                 return true;
-            } else if (button == 1 && (isBackpack)) {
+            } else if (button == 1 && (hasGunId || isBackpack)) {
                 showItemInfo();
                 return true;
             }
@@ -237,10 +234,10 @@ public class WeightListWidget extends ObjectSelectionList<WeightListWidget.Entry
         }
 
         private void showItemInfo() {
-//            if (hasGunId) {
-//                GunIdUtils.GunInfo gunInfo = GunIdUtils.getGunInfo(stack);
-//                System.out.println("GunId Info: " + gunInfo);
-//            }
+            if (hasGunId) {
+                GunIdUtils.GunInfo gunInfo = GunIdUtils.getGunInfo(stack);
+                System.out.println("GunId Info: " + gunInfo);
+            }
             if (isBackpack) {
                 BackpackIdUtils.BackpackInfo backpackInfo = BackpackIdUtils.getBackpackInfo(stack);
                 System.out.println("Backpack Info: " + backpackInfo);
@@ -250,7 +247,7 @@ public class WeightListWidget extends ObjectSelectionList<WeightListWidget.Entry
         @Override
         public Component getNarration() {
             String specialInfo = "";
-//            if (hasGunId) specialInfo += " (Has GunId)";
+            if (hasGunId) specialInfo += " (Has GunId)";
             if (isBackpack) specialInfo += " (Backpack)";
             return Component.literal(stack.getHoverName().getString() + " - Weight: " + weight + " - ID: " + effectiveId + specialInfo);
         }

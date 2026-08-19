@@ -10,13 +10,11 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@EventBusSubscriber
 public class WeightEventHandler {
 
     private static final int EFFECT_DURATION = 6000;
@@ -46,6 +44,7 @@ public class WeightEventHandler {
             return;
         }
 
+        // Updated: map to Holder<MobEffect> instead of raw MobEffect
         List<Holder<MobEffect>> validEffects = currentLevel.effects().stream()
                 .map(MobEffectInstance::getEffect)
                 .toList();
@@ -93,12 +92,14 @@ public class WeightEventHandler {
         }
     }
 
+    // Updated: Signature and comparison logic updated to accept and handle Holder<MobEffect>
     private static boolean isWeightEffect(Holder<MobEffect> effect) {
-        if (effect.is(ModEffects.LIGHT_ENCUMBERED.getKey()) ||
-                effect.is(ModEffects.ENCUMBERED.getKey()) ||
-                effect.is(ModEffects.HEAVILY_ENCUMBERED.getKey()) ||
-                effect.is(ModEffects.OVERBURDENED.getKey()) ||
-                effect.is(ModEffects.CRUSHED.getKey())) {
+        // DeferredHolders implement Holder natively, so we can directly use .equals()
+        if (effect.equals(ModEffects.LIGHT_ENCUMBERED) ||
+                effect.equals(ModEffects.ENCUMBERED) ||
+                effect.equals(ModEffects.HEAVILY_ENCUMBERED) ||
+                effect.equals(ModEffects.OVERBURDENED) ||
+                effect.equals(ModEffects.CRUSHED)) {
             return true;
         }
 
