@@ -166,6 +166,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
     mainFile.addGameVersion("Client")
     mainFile.addGameVersion("Server")
 
+
     mainFile.addOptional("sophisticated-backpacks")
     mainFile.addOptional("travelers-backpack")
     mainFile.addOptional("backpacked")
