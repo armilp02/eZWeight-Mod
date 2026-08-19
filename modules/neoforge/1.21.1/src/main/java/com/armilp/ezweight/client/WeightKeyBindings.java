@@ -27,7 +27,7 @@ public class WeightKeyBindings {
         event.register(OPEN_CONFIG);
     }
 
-    @EventBusSubscriber(modid = "ezweight", value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
+    @EventBusSubscriber(modid = "ezweight", value = Dist.CLIENT)
     public static class ClientForgeEvents {
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {

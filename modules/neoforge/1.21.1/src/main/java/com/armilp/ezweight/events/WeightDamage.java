@@ -1,11 +1,9 @@
 package com.armilp.ezweight.events;
 
-import com.armilp.ezweight.EZWeight;
-import com.armilp.ezweight.commands.WeightCommands;
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.player.DynamicMaxWeightCalculator;
 import com.armilp.ezweight.player.PlayerWeightHandler;
-import com.armilp.ezweight.registry.WeightDamageSources;
+import com.armilp.ezweight.registry.ModDamageSources;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -18,7 +16,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.List;
 
-@EventBusSubscriber(modid = EZWeight.MODID)
+@EventBusSubscriber
 public class WeightDamage {
 
     private static final String TICK_COUNTER_TAG = "ezweight_damage_tick_counter";
@@ -29,7 +27,7 @@ public class WeightDamage {
         Player player = event.getEntity();
         if (player.level().isClientSide) return;
         if (!(player instanceof ServerPlayer serverPlayer)) return;
-        if (!WeightCommands.isWeightEnabledFor(serverPlayer)) return;
+
 
         double currentWeight = PlayerWeightHandler.getTotalWeight(player);
         double maxWeight = DynamicMaxWeightCalculator.calculate(player);
@@ -52,7 +50,7 @@ public class WeightDamage {
             ticksOverweight = 0;
             float damage = calculateDamage(currentWeight, maxWeight);
             if (damage > 0.0f) {
-                DamageSource source = WeightDamageSources.overweight(player.level().registryAccess());
+                DamageSource source = ModDamageSources.overweight(player.level().registryAccess());
                 player.hurt(source, damage);
                 serverPlayer.displayClientMessage(
                         Component.translatable("message.ezweight.overweight_damage").withStyle(ChatFormatting.DARK_RED),

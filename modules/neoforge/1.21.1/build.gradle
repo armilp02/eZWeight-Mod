@@ -29,12 +29,35 @@ sourceSets.main.resources {
 
 repositories {
     maven {
+        name = "Fuzs Maven"
+        url = "https://maven.fuzs.dev/"
+    }
+
+    maven {
+        name = "Fuzs Maven (Backup)"
+        url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/"
+    }
+
+    maven {
         name = "Curse Maven"
         url = "https://www.cursemaven.com/"
         content {
             includeGroup "curse.maven"
         }
     }
+    exclusiveContent { // Sable
+        forRepository {
+            maven {
+                url = "https://maven.ryanhcode.dev/releases"
+                name = "RyanHCode Maven"
+            }
+        }
+        filter {
+            includeGroup("dev.ryanhcode.sable")
+            includeGroup("dev.ryanhcode.sable-companion")
+        }
+    }
+
     maven {
         name = "Illusive Soulworks maven"
         url = "https://maven.theillusivec4.top/"
@@ -60,11 +83,17 @@ repositories {
 dependencies {
     implementation "net.neoforged:neoforge:${neoforge_version}"
 
+    compileOnly "dev.ryanhcode.sable:sable-common-1.21.1:2.0.5"
+    runtimeOnly "dev.ryanhcode.sable:sable-common-1.21.1:2.0.5"
+
     compileOnly "curse.maven:sophisticated-backpacks-422301:8231066"
     runtimeOnly "curse.maven:sophisticated-backpacks-422301:8231066"
 
     compileOnly "curse.maven:tacz-1-21-1-1353462:8547439"
     runtimeOnly "curse.maven:tacz-1-21-1-1353462:8547439"
+
+    compileOnly fileTree(dir: 'libs', include: ['*.jar'])
+    runtimeOnly fileTree(dir: 'libs', include: ['*.jar'])
 
     compileOnly "curse.maven:puffish-skills-835091:8547654"
     runtimeOnly "curse.maven:puffish-skills-835091:8547654"
