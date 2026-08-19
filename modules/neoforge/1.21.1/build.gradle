@@ -170,6 +170,9 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
     mainFile.addOptional("travelers-backpack")
     mainFile.addOptional("backpacked")
     mainFile.addOptional("puffish-skills")
+    mainFile.addOptional("create")
+    mainFile.addOptional("sable")
+    mainFile.addOptional("aeronautics_bundled")
     mainFile.addOptional("curios")
 }
 
@@ -188,6 +191,9 @@ modrinth {
     dependencies {
         optional.project 'sophisticated-backpacks'
         optional.project 'travelersbackpack'
+        optional.project 'sable'
+        optional.project 'create'
+        optional.project 'create-aeronautics'
         optional.project 'curios'
     }
 }
