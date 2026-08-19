@@ -166,14 +166,13 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
     mainFile.addGameVersion("Client")
     mainFile.addGameVersion("Server")
 
-
     mainFile.addOptional("sophisticated-backpacks")
     mainFile.addOptional("travelers-backpack")
     mainFile.addOptional("backpacked")
     mainFile.addOptional("puffish-skills")
     mainFile.addOptional("create")
     mainFile.addOptional("sable")
-    mainFile.addOptional("aeronautics_bundled")
+    mainFile.addOptional("create-aeronautics")
     mainFile.addOptional("curios")
 }
 
