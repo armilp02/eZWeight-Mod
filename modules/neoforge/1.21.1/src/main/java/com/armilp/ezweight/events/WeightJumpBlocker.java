@@ -1,5 +1,6 @@
 package com.armilp.ezweight.events;
 
+import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.commands.WeightCommands;
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.player.DynamicMaxWeightCalculator;
@@ -10,12 +11,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
 
 
 import java.util.List;
 
 
+@EventBusSubscriber(modid = EZWeight.MODID)
 public class WeightJumpBlocker {
 
     @SubscribeEvent

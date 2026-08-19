@@ -1,5 +1,6 @@
 package com.armilp.ezweight.events;
 
+import com.armilp.ezweight.EZWeight;
 import com.armilp.ezweight.config.WeightConfig;
 import com.armilp.ezweight.data.ItemWeightRegistry;
 import com.armilp.ezweight.player.PlayerWeightHandler;
@@ -8,9 +9,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
-
+@EventBusSubscriber(modid = EZWeight.MODID)
 public class ItemTooltipHandler {
 
     @SubscribeEvent

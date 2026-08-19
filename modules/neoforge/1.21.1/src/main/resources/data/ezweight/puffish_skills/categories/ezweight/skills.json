@@ -1,0 +1,44 @@
+{
+	"weight_capacity_10": {
+		"definition": "weight_capacity_10",
+		"x": 0,
+		"y": -128,
+		"root": true
+	},
+	"weight_capacity_25": {
+		"definition": "weight_capacity_25",
+		"x": 0,
+		"y": -64,
+		"root": false
+	},
+	"weight_capacity_50": {
+		"definition": "weight_capacity_50",
+		"x": 0,
+		"y": 0,
+		"root": false
+	},
+	"weight_capacity_100": {
+		"definition": "weight_capacity_100",
+		"x": 0,
+		"y": 64,
+		"root": false
+	},
+	"weight_capacity_200": {
+		"definition": "weight_capacity_200",
+		"x": 0,
+		"y": 128,
+		"root": false
+	},
+	"weight_percentage_20": {
+		"definition": "weight_percentage_20",
+		"x": 64,
+		"y": 0,
+		"root": false
+	},
+	"weight_percentage_50": {
+		"definition": "weight_percentage_50",
+		"x": 64,
+		"y": 64,
+		"root": false
+	}
+}

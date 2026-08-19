@@ -67,6 +67,9 @@ dependencies {
     compileOnly "curse.maven:tacz-1-21-1-1353462:8547439"
     runtimeOnly "curse.maven:tacz-1-21-1-1353462:8547439"
 
+    compileOnly "curse.maven:puffish-skills-835091:8547654"
+    runtimeOnly "curse.maven:puffish-skills-835091:8547654"
+
     compileOnly "curse.maven:sophisticated-core-618298:8231043"
     runtimeOnly "curse.maven:sophisticated-core-618298:8231043"
 
@@ -136,6 +139,8 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
 
     mainFile.addOptional("sophisticated-backpacks")
     mainFile.addOptional("travelers-backpack")
+    mainFile.addOptional("backpacked")
+    mainFile.addOptional("puffish-skills")
     mainFile.addOptional("curios")
 }
 
