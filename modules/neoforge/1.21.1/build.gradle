@@ -17,7 +17,7 @@ base {
 }
 
 def changelogText = project.file('changelog.md').exists() ? project.file('changelog.md').text : "No changelog available"
-def site_debugMode = true
+def site_debugMode = false
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
