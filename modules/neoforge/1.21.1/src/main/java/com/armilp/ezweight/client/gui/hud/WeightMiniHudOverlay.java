@@ -8,12 +8,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 
 
-@EventBusSubscriber(modid = "ezweight")
+@EventBusSubscriber(modid = "ezweight", value = Dist.CLIENT)
 public class WeightMiniHudOverlay {
 
     private static final ResourceLocation ICON_GREEN = ResourceLocation.fromNamespaceAndPath("ezweight", "textures/gui/weight_green.png");

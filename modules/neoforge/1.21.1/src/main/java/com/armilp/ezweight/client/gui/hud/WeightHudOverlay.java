@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -20,7 +21,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import java.util.List;
 
-@EventBusSubscriber(modid = "ezweight")
+@EventBusSubscriber(modid = "ezweight", value = Dist.CLIENT)
 public class WeightHudOverlay {
 
     private static final ResourceLocation ICON = ResourceLocation.fromNamespaceAndPath("ezweight", "textures/gui/ezweight_on.png");

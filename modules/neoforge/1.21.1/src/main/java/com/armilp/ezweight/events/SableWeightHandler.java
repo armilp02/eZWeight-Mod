@@ -32,11 +32,11 @@ public class SableWeightHandler {
     private static final boolean AERONAUTICS_PRESENT =
             ModList.get().isLoaded("aeronautics_bundled");
 
-    private static final double LIGHT_ENCUMBERED_FORCE = WeightConfig.COMMON.LIGHT_ENCUMBERED_FORCE.get();
-    private static final double ENCUMBERED_FORCE = WeightConfig.COMMON.ENCUMBERED_FORCE.get();
-    private static final double HEAVILY_ENCUMBERED_FORCE = WeightConfig.COMMON.HEAVILY_ENCUMBERED_FORCE.get();
-    private static final double OVERBURDENED_FORCE = WeightConfig.COMMON.OVERBURDENED_FORCE.get();
-    private static final double CRUSHED_FORCE = WeightConfig.COMMON.CRUSHED_FORCE.get();
+    private static double lightEncumberedForce() { return WeightConfig.COMMON.LIGHT_ENCUMBERED_FORCE.get(); }
+    private static double encumberedForce() { return WeightConfig.COMMON.ENCUMBERED_FORCE.get(); }
+    private static double heavilyEncumberedForce() { return WeightConfig.COMMON.HEAVILY_ENCUMBERED_FORCE.get(); }
+    private static double overburdenedForce() { return WeightConfig.COMMON.OVERBURDENED_FORCE.get(); }
+    private static double crushedForce() { return WeightConfig.COMMON.CRUSHED_FORCE.get(); }
 
     private static final double MAX_UPWARD_VELOCITY = 1.0;
     private static final double MAX_DOWNWARD_VELOCITY = -2.0;
@@ -113,19 +113,19 @@ public class SableWeightHandler {
         int amplifier;
 
         if (crushed != null) {
-            baseForce = CRUSHED_FORCE;
+            baseForce = crushedForce();
             amplifier = crushed.getAmplifier();
         } else if (overburdened != null) {
-            baseForce = OVERBURDENED_FORCE;
+            baseForce = overburdenedForce();
             amplifier = overburdened.getAmplifier();
         } else if (heavilyEncumbered != null) {
-            baseForce = HEAVILY_ENCUMBERED_FORCE;
+            baseForce = heavilyEncumberedForce();
             amplifier = heavilyEncumbered.getAmplifier();
         } else if (encumbered != null) {
-            baseForce = ENCUMBERED_FORCE;
+            baseForce = encumberedForce();
             amplifier = encumbered.getAmplifier();
         } else {
-            baseForce = LIGHT_ENCUMBERED_FORCE;
+            baseForce = lightEncumberedForce();
             amplifier = lightEncumbered.getAmplifier();
         }
 
